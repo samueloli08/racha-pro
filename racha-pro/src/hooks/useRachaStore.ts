@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { MOCK_PLAYERS } from '../data/mockPlayers';
+import { supabase } from '../lib/supabase';
 import {
   GoalEvent,
   MatchRecord,
@@ -12,6 +13,7 @@ import { playRefWhistle } from '../utils/sound';
 import { generateTeams } from '../utils/teamBalancer';
 
 const STORAGE_KEY = 'rachapro_state_v1';
+const CLOUD_ROW_ID = 'default';
 
 const DEFAULT_STATE: RachaStoreState = {
   players: [],
@@ -50,19 +52,71 @@ export function useRachaStore() {
         };
       }
     } catch {
-      // Fallback para estado padrão
+      // fallback
     }
     return DEFAULT_STATE;
   });
 
+  const isInitialCloudLoad = useRef(true);
+
+  // 1. Carrega dados salvos na nuvem ao abrir o app
+  useEffect(() => {
+    async function loadFromCloud() {
+      if (!supabase) {
+        isInitialCloudLoad.current = false;
+        return;
+      }
+      const { data, error } = await supabase
+        .from('racha_state')
+        .select('data')
+        .eq('id', CLOUD_ROW_ID)
+        .single();
+
+      if (!error && data?.data && Object.keys(data.data).length > 0) {
+        const cloudState = data.data as RachaStoreState;
+        setState({
+          ...DEFAULT_STATE,
+          ...cloudState,
+          activeMatch: {
+            ...DEFAULT_STATE.activeMatch,
+            ...cloudState.activeMatch,
+            isRunning: false,
+          },
+        });
+      }
+      isInitialCloudLoad.current = false;
+    }
+    loadFromCloud();
+  }, []);
+
+  // 2. Salva no localStorage e sincroniza com a nuvem sempre que houver mudança
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     } catch {
-      // Ignora erro de quota
+      // ignora
     }
+
+    if (isInitialCloudLoad.current || !supabase) return;
+
+    // Não envia para nuvem a cada segundo do cronômetro (apenas quando pausa, marca gol, encerra, etc.)
+    if (state.activeMatch.isRunning) return;
+
+    const timeout = window.setTimeout(async () => {
+      if (!supabase) return;
+      await supabase
+        .from('racha_state')
+        .upsert({
+          id: CLOUD_ROW_ID,
+          data: state,
+          updated_at: new Date().toISOString(),
+        });
+    }, 400);
+
+    return () => window.clearTimeout(timeout);
   }, [state]);
 
+  // 3. Tick do cronômetro
   useEffect(() => {
     if (!state.activeMatch.isRunning) return;
 
@@ -127,10 +181,7 @@ export function useRachaStore() {
   };
 
   const loadMockPlayers = () => {
-    setState((prev) => ({
-      ...prev,
-      players: MOCK_PLAYERS,
-    }));
+    setState((prev) => ({ ...prev, players: MOCK_PLAYERS }));
   };
 
   const updateSettings = (playersPerTeam: number, sortMode: SortMode) => {
@@ -246,9 +297,7 @@ export function useRachaStore() {
         0,
         prev.settings.matchDurationSeconds - prev.activeMatch.secondsRemaining
       );
-      const mins = Math.floor(elapsed / 60)
-        .toString()
-        .padStart(2, '0');
+      const mins = Math.floor(elapsed / 60).toString().padStart(2, '0');
       const secs = (elapsed % 60).toString().padStart(2, '0');
 
       const newEvent: GoalEvent = {
@@ -282,12 +331,8 @@ export function useRachaStore() {
         ...prev,
         activeMatch: {
           ...prev.activeMatch,
-          scoreA: isTeamA
-            ? Math.max(0, prev.activeMatch.scoreA - 1)
-            : prev.activeMatch.scoreA,
-          scoreB: !isTeamA
-            ? Math.max(0, prev.activeMatch.scoreB - 1)
-            : prev.activeMatch.scoreB,
+          scoreA: isTeamA ? Math.max(0, prev.activeMatch.scoreA - 1) : prev.activeMatch.scoreA,
+          scoreB: !isTeamA ? Math.max(0, prev.activeMatch.scoreB - 1) : prev.activeMatch.scoreB,
           events: prev.activeMatch.events.filter((e) => e.id !== eventId),
         },
       };
@@ -317,11 +362,10 @@ export function useRachaStore() {
       if (nextTeams.length > 2) {
         const [first, second, ...rest] = nextTeams;
         if (rule === 'winner_stays') {
-          if (prev.activeMatch.scoreB > prev.activeMatch.scoreA) {
-            nextTeams = [second, ...rest, first];
-          } else {
-            nextTeams = [first, ...rest, second];
-          }
+          nextTeams =
+            prev.activeMatch.scoreB > prev.activeMatch.scoreA
+              ? [second, ...rest, first]
+              : [first, ...rest, second];
         } else if (rule === 'team_b_stays') {
           nextTeams = [second, ...rest, first];
         } else if (rule === 'team_a_stays') {
