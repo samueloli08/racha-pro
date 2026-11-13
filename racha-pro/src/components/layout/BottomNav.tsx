@@ -29,7 +29,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
             <button
               key={item.id}
               onClick={() => onSelectTab(item.id)}
-              className={`relative flex flex-col items-center justify-center gap-1 py-2.5 text-xs font-semibold transition-colors ${
+              className={`relative flex flex-col items-center justify-center gap-1 min-h-[56px] py-2.5 text-xs font-semibold transition-colors ${
                 isActive ? 'text-emerald-400' : 'text-zinc-500 hover:text-zinc-300'
               }`}
             >

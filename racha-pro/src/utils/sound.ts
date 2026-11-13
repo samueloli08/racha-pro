@@ -1,12 +1,36 @@
+type WebkitWindow = Window & { webkitAudioContext?: typeof AudioContext };
+
+let sharedCtx: AudioContext | null = null;
+
+function getAudioContext(): AudioContext | null {
+  try {
+    if (sharedCtx) return sharedCtx;
+    const AudioCtx = window.AudioContext || (window as WebkitWindow).webkitAudioContext;
+    if (!AudioCtx) return null;
+    sharedCtx = new AudioCtx();
+    return sharedCtx;
+  } catch {
+    return null;
+  }
+}
+
 /**
- * Gera um apito duplo sintetizado usando Web Audio API (zero dependência externa).
+ * Navegadores móveis só liberam áudio após um toque do usuário.
+ * Chame esta função dentro de um clique (ex.: botão Iniciar) para o apito tocar depois.
  */
+export function unlockAudio(): void {
+  const ctx = getAudioContext();
+  if (ctx && ctx.state === 'suspended') {
+    void ctx.resume().catch(() => undefined);
+  }
+}
+
+/** Gera um apito duplo sintetizado usando Web Audio API (zero dependência externa). */
 export function playRefWhistle(): void {
   try {
-    const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-    if (!AudioCtx) return;
-
-    const ctx = new AudioCtx();
+    const ctx = getAudioContext();
+    if (!ctx) return;
+    if (ctx.state === 'suspended') void ctx.resume().catch(() => undefined);
     const now = ctx.currentTime;
 
     const triggerBlast = (startTime: number, duration: number) => {
@@ -50,6 +74,50 @@ export function playRefWhistle(): void {
     triggerBlast(now, 0.35);
     triggerBlast(now + 0.45, 0.7);
   } catch {
-    // Ignora silenciosamente se o navegador bloquear áudio antes de interação
+    // Ignora silenciosamente se o navegador bloquear áudio
   }
+}
+
+/** Alerta curto e suave (dois "bips") quando falta 1 minuto para o fim. */
+export function playOneMinuteWarning(): void {
+  try {
+    const ctx = getAudioContext();
+    if (!ctx) return;
+    if (ctx.state === 'suspended') void ctx.resume().catch(() => undefined);
+    const now = ctx.currentTime;
+
+    const beep = (startTime: number) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(880, startTime);
+      gain.gain.setValueAtTime(0.001, startTime);
+      gain.gain.exponentialRampToValueAtTime(0.12, startTime + 0.03);
+      gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.22);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(startTime);
+      osc.stop(startTime + 0.25);
+    };
+
+    beep(now);
+    beep(now + 0.3);
+  } catch {
+    // ignora
+  }
+}
+
+/** Vibração (quando suportada pelo aparelho). */
+export function vibratePattern(pattern: number[]): void {
+  try {
+    if (typeof navigator.vibrate === 'function') navigator.vibrate(pattern);
+  } catch {
+    // ignora
+  }
+}
+
+/** Fim de partida: apito + vibração. */
+export function signalMatchEnd(): void {
+  playRefWhistle();
+  vibratePattern([200, 100, 200]);
 }
