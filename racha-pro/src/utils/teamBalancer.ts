@@ -1,6 +1,6 @@
 import { Player, SortMode, Team } from '../types/racha';
 
-const TEAM_PRESETS = [
+export const TEAM_PRESETS = [
   { name: 'Time Verde', color: '#10b981' },
   { name: 'Time Amarelo', color: '#f59e0b' },
   { name: 'Time Azul', color: '#3b82f6' },
