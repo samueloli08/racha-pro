@@ -25,6 +25,13 @@ export function App() {
   }, [store.remoteUpdateTick, toast]);
 
   const presentCount = state.players.filter((p) => p.present).length;
+  const pageIntro: Record<TabId, { eyebrow: string; title: string; description: string }> = {
+    players: { eyebrow: 'GESTÃO DO ELENCO', title: 'Quem vai jogar?', description: 'Confirme a presença e deixe o racha pronto para começar.' },
+    sort: { eyebrow: 'MONTAGEM DOS TIMES', title: 'Equilíbrio em campo.', description: 'Monte equipes justas e organize a fila do próximo jogo.' },
+    match: { eyebrow: 'CENTRAL DA PARTIDA', title: 'O jogo acontece aqui.', description: 'Controle o tempo, registre os gols e acompanhe o placar.' },
+    stats: { eyebrow: 'DESEMPENHO', title: 'Os números do racha.', description: 'Veja quem decide, quem assiste e como anda a temporada.' },
+  };
+  const intro = pageIntro[activeTab];
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-zinc-950 pb-24 text-zinc-100">
@@ -35,7 +42,14 @@ export function App() {
         onRetrySync={store.retrySync}
       />
 
-      <main className="mx-auto max-w-lg px-4 pt-4">
+      <main className="mx-auto max-w-2xl px-4 pt-5 sm:px-6 sm:pt-7">
+        {activeTab !== 'match' && (
+        <section className="page-intro">
+          <p className="page-eyebrow">{intro.eyebrow}</p>
+          <h2>{intro.title}</h2>
+          <p>{intro.description}</p>
+        </section>
+        )}
         <div key={activeTab} className="animate-tab-in">
           {activeTab === 'players' && (
             <PlayersTab

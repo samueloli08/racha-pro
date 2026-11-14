@@ -286,7 +286,7 @@ export const PlayersTab: React.FC<PlayersTabProps> = ({
                 }`}
               >
                 {f.label}
-                <span className="ml-1 text-[10px] opacity-70">{counts[f.id]}</span>
+                <span className="ml-1 text-[11px] opacity-70">{counts[f.id]}</span>
               </button>
             ))}
           </div>
@@ -366,12 +366,12 @@ export const PlayersTab: React.FC<PlayersTabProps> = ({
                   <div className="flex items-center gap-2">
                     <span className="truncate font-semibold text-white">{player.name}</span>
                     {player.isGoalkeeper && (
-                      <span className="shrink-0 rounded bg-amber-500/20 px-1.5 py-0.5 text-[10px] font-bold text-amber-300">
+                      <span className="shrink-0 rounded bg-amber-500/20 px-1.5 py-0.5 text-[11px] font-bold text-amber-300">
                         GK
                       </span>
                     )}
                     {rank !== undefined && (
-                      <span className="shrink-0 rounded bg-emerald-500/15 px-1.5 py-0.5 text-[10px] font-bold text-emerald-300">
+                      <span className="shrink-0 rounded bg-emerald-500/15 px-1.5 py-0.5 text-[11px] font-bold text-emerald-300">
                         #{rank}
                       </span>
                     )}

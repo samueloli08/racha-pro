@@ -3,6 +3,7 @@ export default {
   content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
   theme: {
     extend: {
+      fontFamily: { sans: ['Plus Jakarta Sans', 'sans-serif'], mono: ['JetBrains Mono', 'monospace'] },
       keyframes: {
         'tab-in': {
           '0%': { opacity: '0', transform: 'translateY(8px)' },
