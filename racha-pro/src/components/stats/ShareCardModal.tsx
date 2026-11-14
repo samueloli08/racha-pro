@@ -68,8 +68,8 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({ data, onClose })
   const canNativeShare = typeof navigator.share === 'function';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/85 p-4 backdrop-blur-sm sm:items-center">
-      <div className="flex max-h-[94vh] w-full max-w-md animate-sheet-in flex-col gap-3 rounded-3xl border border-zinc-800 bg-zinc-900 p-5 shadow-2xl">
+    <div className="fixed inset-0 z-50 flex items-end justify-center modal-backdrop p-4 sm:items-center">
+      <div className="flex max-h-[94vh] w-full max-w-md animate-sheet-in flex-col gap-3 rounded-3xl border border-white/10 bg-[#151d16] p-5 shadow-2xl shadow-black/60">
         <div className="flex items-center justify-between">
           <h3 className="text-base font-extrabold text-white">Card do Racha</h3>
           <button

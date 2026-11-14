@@ -39,8 +39,8 @@ export const MatchupModal: React.FC<MatchupModalProps> = ({
   );
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/80 p-4 backdrop-blur-sm sm:items-center">
-      <div className="w-full max-w-md animate-sheet-in space-y-4 rounded-3xl border border-zinc-800 bg-zinc-900 p-5 shadow-2xl">
+    <div className="fixed inset-0 z-50 flex items-end justify-center modal-backdrop p-4 sm:items-center">
+      <div className="w-full max-w-md animate-sheet-in space-y-4 rounded-3xl border border-white/10 bg-[#151d16] p-5 shadow-2xl shadow-black/60">
         <div className="flex items-center justify-between">
           <h3 className="flex items-center gap-2 text-base font-extrabold text-white">
             <Swords className="h-5 w-5 text-emerald-400" /> Escolher Confronto

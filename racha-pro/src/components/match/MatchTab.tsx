@@ -210,7 +210,7 @@ export const MatchTab: React.FC<MatchTabProps> = ({
               >
                 {team.name}
               </span>
-              <span className="max-w-full truncate text-[10px] text-zinc-500">
+              <span className="max-w-full truncate text-[11px] text-zinc-500">
                 {gk ? `🧤 ${gk}` : 'sem goleiro'}
               </span>
               <span className="my-2 font-mono text-5xl font-black text-white tabular-nums">
@@ -247,7 +247,7 @@ export const MatchTab: React.FC<MatchTabProps> = ({
                   <span className="font-mono font-bold text-emerald-400">{ev.minuteFormatted}</span>{' '}
                   <span className="font-bold text-white">⚽ {scorerName}</span>
                   {assistName && <span className="text-zinc-400"> (Assist: {assistName})</span>}
-                  <span className="ml-2 text-[10px] font-bold" style={{ color: evTeam?.color }}>
+                  <span className="ml-2 text-[11px] font-bold" style={{ color: evTeam?.color }}>
                     [{evTeam?.name}]
                   </span>
                 </div>

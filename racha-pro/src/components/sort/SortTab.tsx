@@ -281,7 +281,7 @@ export const SortTab: React.FC<SortTabProps> = ({
                     <TeamName team={team} onRename={(name) => onRenameTeam(team.id, name)} />
                   </div>
                   <div className="flex shrink-0 flex-col items-end gap-1">
-                    <span className="rounded bg-zinc-800 px-2 py-0.5 text-[10px] font-bold uppercase text-zinc-300">
+                    <span className="rounded bg-zinc-800 px-2 py-0.5 text-[11px] font-bold uppercase text-zinc-300">
                       {idx === 0 ? 'Em Campo (A)' : idx === 1 ? 'Em Campo (B)' : `Próximo #${idx - 1}`}
                     </span>
                     <span className="flex items-center gap-1 text-xs font-semibold text-amber-400">

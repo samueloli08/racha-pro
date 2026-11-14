@@ -25,8 +25,8 @@ export const GoalModal: React.FC<GoalModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/80 p-4 backdrop-blur-sm sm:items-center">
-      <div className="max-h-[92vh] w-full max-w-md animate-sheet-in space-y-4 overflow-y-auto rounded-3xl border border-zinc-800 bg-zinc-900 p-5 shadow-2xl">
+    <div className="fixed inset-0 z-50 flex items-end justify-center modal-backdrop p-4 sm:items-center">
+      <div className="max-h-[92vh] w-full max-w-md animate-sheet-in space-y-4 overflow-y-auto rounded-3xl border border-white/10 bg-[#151d16] p-5 shadow-2xl shadow-black/60">
         <div className="flex items-center justify-between">
           <h3 className="text-base font-extrabold text-white">
             ⚽ Gol — <span style={{ color: team.color }}>{team.name}</span>

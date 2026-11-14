@@ -1,42 +1,24 @@
 import React from 'react';
-import { BarChart3, Play, Shuffle, Users } from 'lucide-react';
+import { BarChart3, CircleDot, Shuffle, Users } from 'lucide-react';
 import { TabId } from '../../types/racha';
 
-interface BottomNavProps {
-  activeTab: TabId;
-  onSelectTab: (tab: TabId) => void;
-  isMatchRunning: boolean;
-}
+interface BottomNavProps { activeTab: TabId; onSelectTab: (tab: TabId) => void; isMatchRunning: boolean; }
 
-export const BottomNav: React.FC<BottomNavProps> = ({
-  activeTab,
-  onSelectTab,
-  isMatchRunning,
-}) => {
+export const BottomNav: React.FC<BottomNavProps> = ({ activeTab, onSelectTab, isMatchRunning }) => {
   const items: { id: TabId; label: string; icon: React.ReactNode }[] = [
-    { id: 'players', label: 'Jogadores', icon: <Users className="h-5 w-5" /> },
-    { id: 'sort', label: 'Sorteio', icon: <Shuffle className="h-5 w-5" /> },
-    { id: 'match', label: 'Partida', icon: <Play className="h-5 w-5" /> },
-    { id: 'stats', label: 'Stats', icon: <BarChart3 className="h-5 w-5" /> },
+    { id: 'players', label: 'Elenco', icon: <Users /> },
+    { id: 'sort', label: 'Times', icon: <Shuffle /> },
+    { id: 'match', label: 'Ao vivo', icon: <CircleDot /> },
+    { id: 'stats', label: 'Números', icon: <BarChart3 /> },
   ];
-
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-zinc-800 bg-zinc-950/95 pb-safe backdrop-blur-md">
-      <div className="mx-auto grid max-w-lg grid-cols-4">
+    <nav className="bottom-nav" aria-label="Navegação principal">
+      <div className="bottom-nav-inner">
         {items.map((item) => {
-          const isActive = activeTab === item.id;
+          const active = activeTab === item.id;
           return (
-            <button
-              key={item.id}
-              onClick={() => onSelectTab(item.id)}
-              className={`relative flex flex-col items-center justify-center gap-1 min-h-[56px] py-2.5 text-xs font-semibold transition-colors ${
-                isActive ? 'text-emerald-400' : 'text-zinc-500 hover:text-zinc-300'
-              }`}
-            >
-              {item.id === 'match' && isMatchRunning && (
-                <span className="absolute right-6 top-2 h-2 w-2 animate-ping rounded-full bg-emerald-400" />
-              )}
-              {item.icon}
+            <button key={item.id} onClick={() => onSelectTab(item.id)} aria-current={active ? 'page' : undefined} className={`nav-item ${active ? 'is-active' : ''}`}>
+              <span className="nav-icon-wrap">{item.icon}{item.id === 'match' && isMatchRunning && <i className="live-dot" />}</span>
               <span>{item.label}</span>
             </button>
           );

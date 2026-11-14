@@ -51,7 +51,7 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         {items.map((t) => (
           <div
             key={t.id}
-            className="flex max-w-sm animate-toast-in items-center gap-2 rounded-2xl border border-zinc-700 bg-zinc-900/95 px-4 py-3 text-sm font-semibold text-white shadow-xl backdrop-blur"
+            className="flex max-w-sm animate-toast-in items-center gap-2 rounded-2xl border border-lime-300/20 bg-[#151d16]/95 px-4 py-3 text-sm font-semibold text-white shadow-2xl shadow-black/40 backdrop-blur-xl"
           >
             {ICONS[t.kind]}
             <span>{t.message}</span>
