@@ -19,6 +19,7 @@ type PlayerFilter = 'all' | 'present' | 'absent' | 'gk';
 
 interface PlayersTabProps {
   players: Player[];
+  readOnly?: boolean;
   onAddPlayer: (name: string, isGoalkeeper: boolean, skill: number) => string | null;
   onTogglePresence: (id: string) => void;
   onSetAllPresence: (present: boolean) => void;
@@ -122,6 +123,7 @@ const PlayerEditor: React.FC<PlayerEditorProps> = ({ player, onSave, onCancel })
 
 export const PlayersTab: React.FC<PlayersTabProps> = ({
   players,
+  readOnly = false,
   onAddPlayer,
   onTogglePresence,
   onSetAllPresence,
@@ -194,53 +196,55 @@ export const PlayersTab: React.FC<PlayersTabProps> = ({
 
   return (
     <div className="space-y-4">
-      <form
-        onSubmit={handleSubmit}
-        className="space-y-3 rounded-2xl border border-zinc-800 bg-zinc-900/80 p-4"
-      >
-        <div className="flex gap-2">
-          <input
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Nome do jogador..."
-            className="min-h-[44px] min-w-0 flex-1 rounded-xl border border-zinc-700 bg-zinc-950 px-3.5 text-base text-white placeholder-zinc-500 focus:border-emerald-500 focus:outline-none"
-          />
-          <button
-            type="submit"
-            className="flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl bg-emerald-500 px-4 text-sm font-bold text-zinc-950 transition active:scale-95"
-          >
-            <UserPlus className="h-4 w-4" />
-            Add
-          </button>
-        </div>
-
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <button
-            type="button"
-            onClick={() => setIsGoalkeeper(!isGoalkeeper)}
-            className={`flex min-h-[44px] items-center gap-1.5 rounded-xl border px-3 text-xs font-semibold transition ${
-              isGoalkeeper
-                ? 'border-amber-500/50 bg-amber-500/20 text-amber-300'
-                : 'border-zinc-800 bg-zinc-950 text-zinc-400'
-            }`}
-          >
-            <Shield className="h-4 w-4" />
-            {isGoalkeeper ? 'Goleiro' : 'Linha'}
-          </button>
-
-          <div className="flex items-center">
-            <span className="mr-1 text-xs text-zinc-400">Nível:</span>
-            <StarPicker value={skill} onChange={setSkill} />
+      {!readOnly && (
+        <form
+          onSubmit={handleSubmit}
+          className="space-y-3 rounded-2xl border border-zinc-800 bg-zinc-900/80 p-4"
+        >
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Nome do jogador..."
+              className="min-h-[44px] min-w-0 flex-1 rounded-xl border border-zinc-700 bg-zinc-950 px-3.5 text-base text-white placeholder-zinc-500 focus:border-emerald-500 focus:outline-none"
+            />
+            <button
+              type="submit"
+              className="flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl bg-emerald-500 px-4 text-sm font-bold text-zinc-950 transition active:scale-95"
+            >
+              <UserPlus className="h-4 w-4" />
+              Add
+            </button>
           </div>
-        </div>
-      </form>
+
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <button
+              type="button"
+              onClick={() => setIsGoalkeeper(!isGoalkeeper)}
+              className={`flex min-h-[44px] items-center gap-1.5 rounded-xl border px-3 text-xs font-semibold transition ${
+                isGoalkeeper
+                  ? 'border-amber-500/50 bg-amber-500/20 text-amber-300'
+                  : 'border-zinc-800 bg-zinc-950 text-zinc-400'
+              }`}
+            >
+              <Shield className="h-4 w-4" />
+              {isGoalkeeper ? 'Goleiro' : 'Linha'}
+            </button>
+
+            <div className="flex items-center">
+              <span className="mr-1 text-xs text-zinc-400">Nível:</span>
+              <StarPicker value={skill} onChange={setSkill} />
+            </div>
+          </div>
+        </form>
+      )}
 
       <div className="flex items-center justify-between gap-2">
         <h2 className="text-sm font-bold uppercase tracking-wider text-zinc-400">
           Presença ({presentCount}/{players.length})
         </h2>
-        {players.length === 0 && (
+        {!readOnly && players.length === 0 && (
           <button
             onClick={onLoadMockPlayers}
             className="flex min-h-[44px] items-center gap-1.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 text-xs font-semibold text-emerald-400 hover:bg-emerald-500/20"
@@ -291,30 +295,38 @@ export const PlayersTab: React.FC<PlayersTabProps> = ({
             ))}
           </div>
 
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              onClick={() => {
-                onSetAllPresence(true);
-                toast.show('Todos marcados como presentes');
-              }}
-              className="flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 text-xs font-bold text-emerald-400 active:scale-95"
-            >
-              <CheckCheck className="h-4 w-4" /> Marcar Todos
-            </button>
-            <button
-              onClick={() => {
-                onSetAllPresence(false);
-                toast.show('Todos desmarcados', 'info');
-              }}
-              className="flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl border border-zinc-700 bg-zinc-900 text-xs font-bold text-zinc-300 active:scale-95"
-            >
-              <XCircle className="h-4 w-4" /> Desmarcar Todos
-            </button>
-          </div>
+          {!readOnly && (
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={() => {
+                  onSetAllPresence(true);
+                  toast.show('Todos marcados como presentes');
+                }}
+                className="flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 text-xs font-bold text-emerald-400 active:scale-95"
+              >
+                <CheckCheck className="h-4 w-4" /> Marcar Todos
+              </button>
+              <button
+                onClick={() => {
+                  onSetAllPresence(false);
+                  toast.show('Todos desmarcados', 'info');
+                }}
+                className="flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl border border-zinc-700 bg-zinc-900 text-xs font-bold text-zinc-300 active:scale-95"
+              >
+                <XCircle className="h-4 w-4" /> Desmarcar Todos
+              </button>
+            </div>
+          )}
         </div>
       )}
 
       <div className="space-y-2">
+        {players.length === 0 && readOnly && (
+          <p className="rounded-2xl border border-zinc-800 bg-zinc-900/70 py-8 text-center text-xs text-zinc-500">
+            Nenhum jogador cadastrado neste racha ainda.
+          </p>
+        )}
+
         {visible.length === 0 && players.length > 0 && (
           <p className="py-6 text-center text-xs text-zinc-500">
             Nenhum jogador encontrado com esse filtro.
@@ -322,7 +334,7 @@ export const PlayersTab: React.FC<PlayersTabProps> = ({
         )}
 
         {visible.map((player) => {
-          if (editingId === player.id) {
+          if (!readOnly && editingId === player.id) {
             return (
               <PlayerEditor
                 key={player.id}
@@ -339,67 +351,81 @@ export const PlayersTab: React.FC<PlayersTabProps> = ({
 
           const rank = arrivalRank.get(player.id);
 
+          const rowContent = (
+            <>
+              <div
+                className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border transition ${
+                  player.present
+                    ? 'border-emerald-500 bg-emerald-500 text-zinc-950'
+                    : 'border-zinc-700 bg-zinc-900'
+                }`}
+              >
+                {player.present && <Check className="h-4 w-4 stroke-[3]" />}
+              </div>
+
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="truncate font-semibold text-white">{player.name}</span>
+                  {player.isGoalkeeper && (
+                    <span className="shrink-0 rounded bg-amber-500/20 px-1.5 py-0.5 text-[11px] font-bold text-amber-300">
+                      GK
+                    </span>
+                  )}
+                  {rank !== undefined && (
+                    <span className="shrink-0 rounded bg-emerald-500/15 px-1.5 py-0.5 text-[11px] font-bold text-emerald-300">
+                      #{rank}
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-0.5 pt-0.5">
+                  {Array.from({ length: player.skill }).map((_, i) => (
+                    <Star key={i} className="h-3 w-3 fill-amber-400/80 text-amber-400/80" />
+                  ))}
+                </div>
+              </div>
+            </>
+          );
+
           return (
             <div
               key={player.id}
-              className={`flex items-center justify-between rounded-xl border pl-3 transition ${
+              className={`flex items-center justify-between rounded-xl border px-3 transition ${
                 player.present
                   ? 'border-emerald-500/40 bg-zinc-900'
                   : 'border-zinc-800/70 bg-zinc-950/60 opacity-60'
               }`}
             >
-              <button
-                onClick={() => onTogglePresence(player.id)}
-                className="flex min-h-[56px] min-w-0 flex-1 items-center gap-3 text-left"
-              >
-                <div
-                  className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border transition ${
-                    player.present
-                      ? 'border-emerald-500 bg-emerald-500 text-zinc-950'
-                      : 'border-zinc-700 bg-zinc-900'
-                  }`}
-                >
-                  {player.present && <Check className="h-4 w-4 stroke-[3]" />}
+              {readOnly ? (
+                <div className="flex min-h-[56px] min-w-0 flex-1 items-center gap-3 text-left">
+                  {rowContent}
                 </div>
+              ) : (
+                <button
+                  onClick={() => onTogglePresence(player.id)}
+                  className="flex min-h-[56px] min-w-0 flex-1 items-center gap-3 text-left"
+                >
+                  {rowContent}
+                </button>
+              )}
 
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="truncate font-semibold text-white">{player.name}</span>
-                    {player.isGoalkeeper && (
-                      <span className="shrink-0 rounded bg-amber-500/20 px-1.5 py-0.5 text-[11px] font-bold text-amber-300">
-                        GK
-                      </span>
-                    )}
-                    {rank !== undefined && (
-                      <span className="shrink-0 rounded bg-emerald-500/15 px-1.5 py-0.5 text-[11px] font-bold text-emerald-300">
-                        #{rank}
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-0.5 pt-0.5">
-                    {Array.from({ length: player.skill }).map((_, i) => (
-                      <Star key={i} className="h-3 w-3 fill-amber-400/80 text-amber-400/80" />
-                    ))}
-                  </div>
+              {!readOnly && (
+                <div className="flex shrink-0 items-center">
+                  <button
+                    onClick={() => setEditingId(player.id)}
+                    className="flex h-11 w-11 items-center justify-center rounded-lg text-zinc-500 hover:bg-zinc-800 hover:text-amber-300"
+                    aria-label={`Editar ${player.name}`}
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </button>
+                  <button
+                    onClick={() => handleRemove(player)}
+                    className="flex h-11 w-11 items-center justify-center rounded-lg text-zinc-500 hover:bg-zinc-800 hover:text-red-400"
+                    aria-label={`Remover ${player.name}`}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
                 </div>
-              </button>
-
-              <div className="flex shrink-0 items-center">
-                <button
-                  onClick={() => setEditingId(player.id)}
-                  className="flex h-11 w-11 items-center justify-center rounded-lg text-zinc-500 hover:bg-zinc-800 hover:text-amber-300"
-                  aria-label={`Editar ${player.name}`}
-                >
-                  <Pencil className="h-4 w-4" />
-                </button>
-                <button
-                  onClick={() => handleRemove(player)}
-                  className="flex h-11 w-11 items-center justify-center rounded-lg text-zinc-500 hover:bg-zinc-800 hover:text-red-400"
-                  aria-label={`Remover ${player.name}`}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
-              </div>
+              )}
             </div>
           );
         })}

@@ -21,6 +21,7 @@ interface MatchTabProps {
   teams: Team[];
   players: Player[];
   durationSeconds: number;
+  readOnly?: boolean;
   onToggleTimer: () => void;
   onResetTimer: () => void;
   onAddOneMinute: () => void;
@@ -41,6 +42,7 @@ export const MatchTab: React.FC<MatchTabProps> = ({
   teams,
   players,
   durationSeconds,
+  readOnly = false,
   onToggleTimer,
   onResetTimer,
   onAddOneMinute,
@@ -63,13 +65,19 @@ export const MatchTab: React.FC<MatchTabProps> = ({
   if (!teamA || !teamB) {
     return (
       <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-8 text-center">
-        <p className="text-sm text-zinc-400">Nenhum time sorteado ainda para iniciar a partida.</p>
-        <button
-          onClick={onGoToSort}
-          className="mt-4 min-h-[48px] rounded-xl bg-emerald-500 px-5 text-sm font-extrabold text-zinc-950"
-        >
-          Ir para Sorteio
-        </button>
+        <p className="text-sm text-zinc-400">
+          {readOnly
+            ? 'Nenhuma partida em andamento ainda.'
+            : 'Nenhum time sorteado ainda para iniciar a partida.'}
+        </p>
+        {!readOnly && (
+          <button
+            onClick={onGoToSort}
+            className="mt-4 min-h-[48px] rounded-xl bg-emerald-500 px-5 text-sm font-extrabold text-zinc-950"
+          >
+            Ir para Sorteio
+          </button>
+        )}
       </div>
     );
   }
@@ -99,99 +107,114 @@ export const MatchTab: React.FC<MatchTabProps> = ({
 
   return (
     <div className="space-y-5">
-      <div
-        className={`rounded-3xl border p-5 text-center transition ${
-          isTimeOver
-            ? 'animate-pulse border-amber-500 bg-amber-500/15'
-            : isLastMinute
-            ? 'border-amber-500/60 bg-zinc-900'
-            : 'border-zinc-800 bg-zinc-900'
-        }`}
-      >
-        <div className="mb-2 flex items-center justify-between">
-          <div className="flex gap-1">
-            {[5, 7, 8, 10].map((m) => (
-              <button
-                key={m}
-                onClick={() => onChangeDuration(m)}
-                className={`min-h-[44px] min-w-[44px] rounded-xl px-2 text-xs font-bold ${
-                  durationSeconds === m * 60
-                    ? 'bg-emerald-500 text-zinc-950'
-                    : 'bg-zinc-950 text-zinc-400'
-                }`}
-              >
-                {m}m
-              </button>
-            ))}
-          </div>
-
-          <button
-            onClick={() => {
-              unlockAudio();
-              playRefWhistle();
-            }}
-            className="flex min-h-[44px] items-center gap-1 rounded-xl bg-zinc-800 px-3 text-xs font-semibold text-zinc-300"
-            title="Testar Apito"
-          >
-            <Volume2 className="h-4 w-4 text-emerald-400" /> Apito
-          </button>
+      {readOnly ? (
+        <div className="rounded-3xl border border-zinc-800 bg-zinc-900 p-4 text-center">
+          <p className="font-mono text-[11px] font-bold uppercase tracking-widest text-lime-300">
+            Placar ao vivo • Somente leitura
+          </p>
+          <p className="mt-1 text-xs text-zinc-400">
+            Atualiza automaticamente conforme o organizador registra os gols.
+          </p>
         </div>
-
+      ) : (
         <div
-          className={`my-2 font-mono text-6xl font-black tracking-tight tabular-nums ${
-            isLastMinute ? 'text-amber-300' : 'text-white'
+          className={`rounded-3xl border p-5 text-center transition ${
+            isTimeOver
+              ? 'animate-pulse border-amber-500 bg-amber-500/15'
+              : isLastMinute
+              ? 'border-amber-500/60 bg-zinc-900'
+              : 'border-zinc-800 bg-zinc-900'
           }`}
         >
-          {mins}:{secs}
-        </div>
-        {activeMatch.isRunning && (
-          <p className="text-[11px] font-medium text-zinc-500">🔆 Tela mantida acesa durante o jogo</p>
-        )}
+          <div className="mb-2 flex items-center justify-between">
+            <div className="flex gap-1">
+              {[5, 7, 8, 10].map((m) => (
+                <button
+                  key={m}
+                  onClick={() => onChangeDuration(m)}
+                  className={`min-h-[44px] min-w-[44px] rounded-xl px-2 text-xs font-bold ${
+                    durationSeconds === m * 60
+                      ? 'bg-emerald-500 text-zinc-950'
+                      : 'bg-zinc-950 text-zinc-400'
+                  }`}
+                >
+                  {m}m
+                </button>
+              ))}
+            </div>
 
-        <div className="mt-4 grid grid-cols-3 gap-2">
-          <button
-            onClick={onToggleTimer}
-            className={`col-span-2 flex min-h-[56px] items-center justify-center gap-2 rounded-2xl text-base font-extrabold transition active:scale-95 ${
-              activeMatch.isRunning ? 'bg-amber-500 text-zinc-950' : 'bg-emerald-500 text-zinc-950'
-            }`}
-          >
-            {activeMatch.isRunning ? (
-              <>
-                <Pause className="h-5 w-5 fill-current" /> Pausar
-              </>
-            ) : (
-              <>
-                <Play className="h-5 w-5 fill-current" /> Iniciar
-              </>
-            )}
-          </button>
-
-          <div className="grid grid-cols-2 gap-1.5">
             <button
-              onClick={onAddOneMinute}
-              className="flex min-h-[44px] items-center justify-center rounded-2xl border border-zinc-700 bg-zinc-950 text-xs font-extrabold text-zinc-200 active:scale-95"
+              onClick={() => {
+                unlockAudio();
+                playRefWhistle();
+              }}
+              className="flex min-h-[44px] items-center gap-1 rounded-xl bg-zinc-800 px-3 text-xs font-semibold text-zinc-300"
+              title="Testar Apito"
             >
-              +1m
-            </button>
-            <button
-              onClick={onResetTimer}
-              className="flex min-h-[44px] items-center justify-center rounded-2xl border border-zinc-700 bg-zinc-950 text-zinc-400 active:scale-95"
-              aria-label="Resetar tempo"
-            >
-              <RotateCcw className="h-4 w-4" />
+              <Volume2 className="h-4 w-4 text-emerald-400" /> Apito
             </button>
           </div>
-        </div>
-      </div>
 
-      <button
-        onClick={() => setShowMatchup(true)}
-        disabled={teams.length < 2}
-        className="flex min-h-[44px] w-full items-center justify-center gap-2 rounded-2xl border border-zinc-800 bg-zinc-900 text-xs font-bold text-zinc-300 transition hover:border-emerald-500 active:scale-95"
-      >
-        <Swords className="h-4 w-4 text-emerald-400" />
-        Trocar confronto
-      </button>
+          <div
+            className={`my-2 font-mono text-6xl font-black tracking-tight tabular-nums ${
+              isLastMinute ? 'text-amber-300' : 'text-white'
+            }`}
+          >
+            {mins}:{secs}
+          </div>
+          {activeMatch.isRunning && (
+            <p className="text-[11px] font-medium text-zinc-500">
+              🔆 Tela mantida acesa durante o jogo
+            </p>
+          )}
+
+          <div className="mt-4 grid grid-cols-3 gap-2">
+            <button
+              onClick={onToggleTimer}
+              className={`col-span-2 flex min-h-[56px] items-center justify-center gap-2 rounded-2xl text-base font-extrabold transition active:scale-95 ${
+                activeMatch.isRunning ? 'bg-amber-500 text-zinc-950' : 'bg-emerald-500 text-zinc-950'
+              }`}
+            >
+              {activeMatch.isRunning ? (
+                <>
+                  <Pause className="h-5 w-5 fill-current" /> Pausar
+                </>
+              ) : (
+                <>
+                  <Play className="h-5 w-5 fill-current" /> Iniciar
+                </>
+              )}
+            </button>
+
+            <div className="grid grid-cols-2 gap-1.5">
+              <button
+                onClick={onAddOneMinute}
+                className="flex min-h-[44px] items-center justify-center rounded-2xl border border-zinc-700 bg-zinc-950 text-xs font-extrabold text-zinc-200 active:scale-95"
+              >
+                +1m
+              </button>
+              <button
+                onClick={onResetTimer}
+                className="flex min-h-[44px] items-center justify-center rounded-2xl border border-zinc-700 bg-zinc-950 text-zinc-400 active:scale-95"
+                aria-label="Resetar tempo"
+              >
+                <RotateCcw className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {!readOnly && (
+        <button
+          onClick={() => setShowMatchup(true)}
+          disabled={teams.length < 2}
+          className="flex min-h-[44px] w-full items-center justify-center gap-2 rounded-2xl border border-zinc-800 bg-zinc-900 text-xs font-bold text-zinc-300 transition hover:border-emerald-500 active:scale-95"
+        >
+          <Swords className="h-4 w-4 text-emerald-400" />
+          Trocar confronto
+        </button>
+      )}
 
       <div className="grid grid-cols-2 gap-3">
         {[
@@ -216,12 +239,14 @@ export const MatchTab: React.FC<MatchTabProps> = ({
               <span className="my-2 font-mono text-5xl font-black text-white tabular-nums">
                 {score}
               </span>
-              <button
-                onClick={() => setGoalModalTeam(team)}
-                className="mt-1 flex min-h-[48px] w-full items-center justify-center gap-1 rounded-xl bg-zinc-800 text-sm font-extrabold text-white transition hover:bg-emerald-500 hover:text-zinc-950 active:scale-95"
-              >
-                <Plus className="h-4 w-4 stroke-[3]" /> GOL
-              </button>
+              {!readOnly && (
+                <button
+                  onClick={() => setGoalModalTeam(team)}
+                  className="mt-1 flex min-h-[48px] w-full items-center justify-center gap-1 rounded-xl bg-zinc-800 text-sm font-extrabold text-white transition hover:bg-emerald-500 hover:text-zinc-950 active:scale-95"
+                >
+                  <Plus className="h-4 w-4 stroke-[3]" /> GOL
+                </button>
+              )}
             </div>
           );
         })}
@@ -241,7 +266,7 @@ export const MatchTab: React.FC<MatchTabProps> = ({
             return (
               <div
                 key={ev.id}
-                className="flex items-center justify-between gap-2 rounded-xl bg-zinc-950 pl-3 text-xs"
+                className="flex items-center justify-between gap-2 rounded-xl bg-zinc-950 px-3 text-xs"
               >
                 <div className="min-w-0 py-2">
                   <span className="font-mono font-bold text-emerald-400">{ev.minuteFormatted}</span>{' '}
@@ -251,31 +276,35 @@ export const MatchTab: React.FC<MatchTabProps> = ({
                     [{evTeam?.name}]
                   </span>
                 </div>
-                <button
-                  onClick={() => {
-                    onRemoveEvent(ev.id);
-                    toast.show('Gol removido', 'info');
-                  }}
-                  className="flex h-11 w-11 shrink-0 items-center justify-center text-zinc-500 hover:text-red-400"
-                  aria-label="Remover gol"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
+                {!readOnly && (
+                  <button
+                    onClick={() => {
+                      onRemoveEvent(ev.id);
+                      toast.show('Gol removido', 'info');
+                    }}
+                    className="flex h-11 w-11 shrink-0 items-center justify-center text-zinc-500 hover:text-red-400"
+                    aria-label="Remover gol"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                )}
               </div>
             );
           })}
         </div>
       )}
 
-      <button
-        onClick={() => setShowEndModal(true)}
-        className="flex min-h-[52px] w-full items-center justify-center gap-2 rounded-2xl border border-zinc-700 bg-zinc-900 text-sm font-extrabold text-white transition hover:border-emerald-500"
-      >
-        <Flag className="h-4 w-4 text-emerald-400" />
-        Encerrar Partida e Rotacionar Fila
-      </button>
+      {!readOnly && (
+        <button
+          onClick={() => setShowEndModal(true)}
+          className="flex min-h-[52px] w-full items-center justify-center gap-2 rounded-2xl border border-zinc-700 bg-zinc-900 text-sm font-extrabold text-white transition hover:border-emerald-500"
+        >
+          <Flag className="h-4 w-4 text-emerald-400" />
+          Encerrar Partida e Rotacionar Fila
+        </button>
+      )}
 
-      {goalModalTeam && (
+      {!readOnly && goalModalTeam && (
         <GoalModal
           team={goalModalTeam}
           players={players}
@@ -288,7 +317,7 @@ export const MatchTab: React.FC<MatchTabProps> = ({
         />
       )}
 
-      {showEndModal && (
+      {!readOnly && showEndModal && (
         <EndMatchModal
           teamA={teamA}
           teamB={teamB}
@@ -304,7 +333,7 @@ export const MatchTab: React.FC<MatchTabProps> = ({
         />
       )}
 
-      {showMatchup && (
+      {!readOnly && showMatchup && (
         <MatchupModal
           teams={teams}
           currentAId={teamA.id}
