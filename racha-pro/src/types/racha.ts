@@ -91,3 +91,14 @@ export interface RachaStoreState {
   archivedDays: number;
   archivedMatches: number;
 }
+
+export interface RachaRecord {
+  id: string;
+  owner_id: string;
+  name: string;
+  share_code: string;
+  is_public: boolean;
+  data: unknown;
+  created_at: string;
+  updated_at: string;
+}

@@ -10,7 +10,8 @@ Aplicativo web **mobile-first** e **offline-first** desenvolvido para organizar 
 - **Artilharia & WhatsApp:** Ranking de gols, garçons, MVP (G+A) e exportação formatada com 1 clique para o grupo do WhatsApp.
 
 ## 🆕 Novidades (pacote de melhorias)
-- **Sync em tempo real:** indicador no header (🟢 Sincronizado / 🟡 Salvando... / 🔴 Offline (Local)) e Supabase Realtime — outros celulares com o link atualizam placar, gols e times sozinhos. Rode `supabase/realtime.sql` uma vez no Supabase.
+- **Contas, Múltiplos Rachas e Link Somente Leitura:** login e cadastro por e-mail e senha (Supabase Auth), vários rachas por conta (trocar, criar, renomear e excluir pelo topo) e link compartilhável `?racha=<código>` em modo somente leitura com atualização ao vivo. Rode `supabase/auth_rachas.sql` uma vez no SQL Editor do Supabase.
+- **Sync em tempo real:** indicador no header (🟢 Sincronizado / 🟡 Salvando... / 🔴 Offline) e Supabase Realtime — outros celulares com o link atualizam placar, gols e times sozinhos.
 - **Tela sempre acesa** (Wake Lock) enquanto o cronômetro roda.
 - **Jogadores:** busca, filtros, marcar/desmarcar todos, edição inline (lápis) e badge de ordem de chegada (#1, #2...).
 - **Sorteio:** renomear time e trocar cor (6 presets), troca manual com destaque pulsante + "Cancelar troca", jogador atrasado direto em um time, botão "Copiar Escalação".

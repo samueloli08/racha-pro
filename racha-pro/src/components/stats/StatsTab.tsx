@@ -34,6 +34,7 @@ interface StatsTabProps {
   allTimeStats: Record<string, AllTimePlayerStats>;
   archivedDays: number;
   archivedMatches: number;
+  readOnly?: boolean;
   onArchiveDay: () => void;
   onResetDay: () => void;
   onResetAllTime: () => void;
@@ -52,6 +53,7 @@ export const StatsTab: React.FC<StatsTabProps> = ({
   allTimeStats,
   archivedDays,
   archivedMatches,
+  readOnly = false,
   onArchiveDay,
   onResetDay,
   onResetAllTime,
@@ -307,33 +309,34 @@ export const StatsTab: React.FC<StatsTabProps> = ({
         </div>
       )}
 
-      {isToday ? (
-        history.length > 0 && (
-          <div className="space-y-2">
+      {!readOnly &&
+        (isToday ? (
+          history.length > 0 && (
+            <div className="space-y-2">
+              <button
+                onClick={handleArchive}
+                className="flex min-h-[52px] w-full items-center justify-center gap-2 rounded-2xl bg-amber-500 text-sm font-extrabold text-zinc-950 shadow-lg shadow-amber-500/10 transition active:scale-95"
+              >
+                <Archive className="h-4 w-4" /> Encerrar Dia / Arquivar Racha
+              </button>
+              <button
+                onClick={handleResetDay}
+                className="flex min-h-[44px] w-full items-center justify-center gap-1.5 rounded-xl border border-red-500/30 bg-red-500/10 text-xs font-bold text-red-400"
+              >
+                <RotateCcw className="h-3.5 w-3.5" /> Descartar Estatísticas do Dia
+              </button>
+            </div>
+          )
+        ) : (
+          archivedMatches > 0 && (
             <button
-              onClick={handleArchive}
-              className="flex min-h-[52px] w-full items-center justify-center gap-2 rounded-2xl bg-amber-500 text-sm font-extrabold text-zinc-950 shadow-lg shadow-amber-500/10 transition active:scale-95"
-            >
-              <Archive className="h-4 w-4" /> Encerrar Dia / Arquivar Racha
-            </button>
-            <button
-              onClick={handleResetDay}
+              onClick={handleResetAll}
               className="flex min-h-[44px] w-full items-center justify-center gap-1.5 rounded-xl border border-red-500/30 bg-red-500/10 text-xs font-bold text-red-400"
             >
-              <RotateCcw className="h-3.5 w-3.5" /> Descartar Estatísticas do Dia
+              <Trash2 className="h-3.5 w-3.5" /> Apagar Ranking Geral
             </button>
-          </div>
-        )
-      ) : (
-        archivedMatches > 0 && (
-          <button
-            onClick={handleResetAll}
-            className="flex min-h-[44px] w-full items-center justify-center gap-1.5 rounded-xl border border-red-500/30 bg-red-500/10 text-xs font-bold text-red-400"
-          >
-            <Trash2 className="h-3.5 w-3.5" /> Apagar Ranking Geral
-          </button>
-        )
-      )}
+          )
+        ))}
 
       {!hasData && isToday && (
         <p className="text-center text-xs text-zinc-600">

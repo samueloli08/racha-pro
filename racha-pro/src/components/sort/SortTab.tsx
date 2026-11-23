@@ -22,6 +22,7 @@ interface SortTabProps {
   teams: Team[];
   playersPerTeam: number;
   sortMode: SortMode;
+  readOnly?: boolean;
   onUpdateSettings: (playersPerTeam: number, mode: SortMode) => void;
   onRunSort: () => void;
   onSwapPlayers: (tA: string, pA: string, tB: string, pB: string) => void;
@@ -84,6 +85,7 @@ export const SortTab: React.FC<SortTabProps> = ({
   teams,
   playersPerTeam,
   sortMode,
+  readOnly = false,
   onUpdateSettings,
   onRunSort,
   onSwapPlayers,
@@ -147,69 +149,79 @@ export const SortTab: React.FC<SortTabProps> = ({
 
   return (
     <div className="space-y-5">
-      <div className="space-y-4 rounded-2xl border border-zinc-800 bg-zinc-900/80 p-4">
-        <div>
-          <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-zinc-400">
-            Jogadores por Time
-          </label>
-          <div className="grid grid-cols-5 gap-2">
-            {[4, 5, 6, 7, 8].map((num) => (
+      {!readOnly && (
+        <div className="space-y-4 rounded-2xl border border-zinc-800 bg-zinc-900/80 p-4">
+          <div>
+            <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-zinc-400">
+              Jogadores por Time
+            </label>
+            <div className="grid grid-cols-5 gap-2">
+              {[4, 5, 6, 7, 8].map((num) => (
+                <button
+                  key={num}
+                  onClick={() => onUpdateSettings(num, sortMode)}
+                  className={`min-h-[44px] rounded-xl text-sm font-bold transition ${
+                    playersPerTeam === num
+                      ? 'bg-emerald-500 text-zinc-950'
+                      : 'bg-zinc-950 text-zinc-300 hover:bg-zinc-800'
+                  }`}
+                >
+                  {num}x{num}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-zinc-400">
+              Critério de Sorteio
+            </label>
+            <div className="grid grid-cols-2 gap-2">
               <button
-                key={num}
-                onClick={() => onUpdateSettings(num, sortMode)}
-                className={`min-h-[44px] rounded-xl text-sm font-bold transition ${
-                  playersPerTeam === num
-                    ? 'bg-emerald-500 text-zinc-950'
-                    : 'bg-zinc-950 text-zinc-300 hover:bg-zinc-800'
+                onClick={() => onUpdateSettings(playersPerTeam, 'balanced')}
+                className={`min-h-[44px] rounded-xl border text-xs font-bold transition ${
+                  sortMode === 'balanced'
+                    ? 'border-emerald-500 bg-emerald-500/15 text-emerald-400'
+                    : 'border-zinc-800 bg-zinc-950 text-zinc-400'
                 }`}
               >
-                {num}x{num}
+                ⚖️ Equilibrado (Nível + GK)
               </button>
-            ))}
+              <button
+                onClick={() => onUpdateSettings(playersPerTeam, 'random')}
+                className={`min-h-[44px] rounded-xl border text-xs font-bold transition ${
+                  sortMode === 'random'
+                    ? 'border-emerald-500 bg-emerald-500/15 text-emerald-400'
+                    : 'border-zinc-800 bg-zinc-950 text-zinc-400'
+                }`}
+              >
+                🎲 Aleatório Puro
+              </button>
+            </div>
           </div>
-        </div>
 
-        <div>
-          <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-zinc-400">
-            Critério de Sorteio
-          </label>
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              onClick={() => onUpdateSettings(playersPerTeam, 'balanced')}
-              className={`min-h-[44px] rounded-xl border text-xs font-bold transition ${
-                sortMode === 'balanced'
-                  ? 'border-emerald-500 bg-emerald-500/15 text-emerald-400'
-                  : 'border-zinc-800 bg-zinc-950 text-zinc-400'
-              }`}
-            >
-              ⚖️ Equilibrado (Nível + GK)
-            </button>
-            <button
-              onClick={() => onUpdateSettings(playersPerTeam, 'random')}
-              className={`min-h-[44px] rounded-xl border text-xs font-bold transition ${
-                sortMode === 'random'
-                  ? 'border-emerald-500 bg-emerald-500/15 text-emerald-400'
-                  : 'border-zinc-800 bg-zinc-950 text-zinc-400'
-              }`}
-            >
-              🎲 Aleatório Puro
-            </button>
-          </div>
+          <button
+            onClick={() => {
+              onRunSort();
+              setSelectedSwap(null);
+              toast.show('Times sorteados!');
+            }}
+            disabled={presentCount < 2}
+            className="flex min-h-[48px] w-full items-center justify-center gap-2 rounded-xl bg-emerald-500 text-sm font-extrabold text-zinc-950 shadow-lg shadow-emerald-500/20 transition active:scale-95 disabled:opacity-40"
+          >
+            <Shuffle className="h-4 w-4 stroke-[2.5]" />
+            Sortear Times ({presentCount} presentes)
+          </button>
         </div>
+      )}
 
-        <button
-          onClick={() => {
-            onRunSort();
-            setSelectedSwap(null);
-            toast.show('Times sorteados!');
-          }}
-          disabled={presentCount < 2}
-          className="flex min-h-[48px] w-full items-center justify-center gap-2 rounded-xl bg-emerald-500 text-sm font-extrabold text-zinc-950 shadow-lg shadow-emerald-500/20 transition active:scale-95 disabled:opacity-40"
-        >
-          <Shuffle className="h-4 w-4 stroke-[2.5]" />
-          Sortear Times ({presentCount} presentes)
-        </button>
-      </div>
+      {teams.length === 0 && readOnly && (
+        <div className="rounded-2xl border border-zinc-800 bg-zinc-900/70 p-8 text-center">
+          <p className="text-sm text-zinc-400">
+            Os times ainda não foram sorteados pelo organizador.
+          </p>
+        </div>
+      )}
 
       {teams.length > 0 && (
         <div className="space-y-3">
@@ -228,24 +240,27 @@ export const SortTab: React.FC<SortTabProps> = ({
             </button>
           </div>
 
-          {selectedSwap ? (
-            <div className="sticky top-[60px] z-20 flex items-center justify-between gap-2 rounded-2xl border border-amber-400 bg-zinc-900/95 p-2 pl-4 backdrop-blur">
-              <p className="min-w-0 text-xs text-amber-200">
-                <span className="font-bold">Trocando:</span>{' '}
-                <span className="font-extrabold text-white">{selectedPlayer?.name ?? 'Jogador'}</span>
-                <br />
-                Toque em outro jogador para trocar
-              </p>
-              <button
-                onClick={() => setSelectedSwap(null)}
-                className="flex min-h-[44px] shrink-0 items-center gap-1 rounded-xl bg-amber-400 px-3 text-xs font-extrabold text-zinc-950 active:scale-95"
-              >
-                <X className="h-4 w-4" /> Cancelar troca
-              </button>
-            </div>
-          ) : (
-            <p className="text-xs text-zinc-400">Toque em dois jogadores para trocar manualmente</p>
-          )}
+          {!readOnly &&
+            (selectedSwap ? (
+              <div className="sticky top-[60px] z-20 flex items-center justify-between gap-2 rounded-2xl border border-amber-400 bg-zinc-900/95 p-2 pl-4 backdrop-blur">
+                <p className="min-w-0 text-xs text-amber-200">
+                  <span className="font-bold">Trocando:</span>{' '}
+                  <span className="font-extrabold text-white">
+                    {selectedPlayer?.name ?? 'Jogador'}
+                  </span>
+                  <br />
+                  Toque em outro jogador para trocar
+                </p>
+                <button
+                  onClick={() => setSelectedSwap(null)}
+                  className="flex min-h-[44px] shrink-0 items-center gap-1 rounded-xl bg-amber-400 px-3 text-xs font-extrabold text-zinc-950 active:scale-95"
+                >
+                  <X className="h-4 w-4" /> Cancelar troca
+                </button>
+              </div>
+            ) : (
+              <p className="text-xs text-zinc-400">Toque em dois jogadores para trocar manualmente</p>
+            ))}
 
           {teams.map((team, idx) => {
             const teamPlayers = team.playerIds
@@ -264,21 +279,33 @@ export const SortTab: React.FC<SortTabProps> = ({
               >
                 <div className="mb-2 flex items-center justify-between gap-2">
                   <div className="flex min-w-0 flex-1 items-center gap-2">
-                    <button
-                      onClick={() =>
-                        setColorPickerTeamId(colorPickerTeamId === team.id ? null : team.id)
-                      }
-                      className="flex h-11 w-9 shrink-0 items-center justify-center"
-                      aria-label={`Trocar cor do ${team.name}`}
-                    >
-                      <span
-                        className="flex h-6 w-6 items-center justify-center rounded-full ring-2 ring-zinc-700"
-                        style={{ backgroundColor: team.color }}
-                      >
-                        <Palette className="h-3 w-3 text-zinc-950/70" />
-                      </span>
-                    </button>
-                    <TeamName team={team} onRename={(name) => onRenameTeam(team.id, name)} />
+                    {readOnly ? (
+                      <>
+                        <span
+                          className="h-5 w-5 shrink-0 rounded-full ring-2 ring-zinc-700"
+                          style={{ backgroundColor: team.color }}
+                        />
+                        <h3 className="truncate font-bold text-white">{team.name}</h3>
+                      </>
+                    ) : (
+                      <>
+                        <button
+                          onClick={() =>
+                            setColorPickerTeamId(colorPickerTeamId === team.id ? null : team.id)
+                          }
+                          className="flex h-11 w-9 shrink-0 items-center justify-center"
+                          aria-label={`Trocar cor do ${team.name}`}
+                        >
+                          <span
+                            className="flex h-6 w-6 items-center justify-center rounded-full ring-2 ring-zinc-700"
+                            style={{ backgroundColor: team.color }}
+                          >
+                            <Palette className="h-3 w-3 text-zinc-950/70" />
+                          </span>
+                        </button>
+                        <TeamName team={team} onRename={(name) => onRenameTeam(team.id, name)} />
+                      </>
+                    )}
                   </div>
                   <div className="flex shrink-0 flex-col items-end gap-1">
                     <span className="rounded bg-zinc-800 px-2 py-0.5 text-[11px] font-bold uppercase text-zinc-300">
@@ -290,7 +317,7 @@ export const SortTab: React.FC<SortTabProps> = ({
                   </div>
                 </div>
 
-                {colorPickerTeamId === team.id && (
+                {!readOnly && colorPickerTeamId === team.id && (
                   <div className="mb-3 grid grid-cols-6 gap-2">
                     {TEAM_PRESETS.map((preset) => (
                       <button
@@ -319,6 +346,21 @@ export const SortTab: React.FC<SortTabProps> = ({
                   {teamPlayers.map((p) => {
                     const isSelected =
                       selectedSwap?.teamId === team.id && selectedSwap?.playerId === p.id;
+                    if (readOnly) {
+                      return (
+                        <div
+                          key={p.id}
+                          className="flex min-h-[44px] items-center justify-between rounded-xl border border-zinc-800/80 bg-zinc-950/70 px-3 text-left text-sm text-zinc-200"
+                        >
+                          <span className="min-w-0 truncate font-medium">
+                            {p.name}{' '}
+                            {p.isGoalkeeper && (
+                              <span className="ml-1 text-xs font-bold text-amber-400">(GK)</span>
+                            )}
+                          </span>
+                        </div>
+                      );
+                    }
                     return (
                       <button
                         key={p.id}
@@ -353,87 +395,89 @@ export const SortTab: React.FC<SortTabProps> = ({
             );
           })}
 
-          <div className="space-y-3 rounded-2xl border border-zinc-800 bg-zinc-900/90 p-4">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-300">
-              ⏱️ Chegou Atrasado
-            </h3>
+          {!readOnly && (
+            <div className="space-y-3 rounded-2xl border border-zinc-800 bg-zinc-900/90 p-4">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-300">
+                ⏱️ Chegou Atrasado
+              </h3>
 
-            {lateArrivals.length > 0 && (
-              <div className="space-y-2">
-                {lateArrivals.map((p) => (
-                  <div
-                    key={p.id}
-                    className="space-y-2 rounded-xl border border-zinc-800 bg-zinc-950/70 p-3"
-                  >
-                    <p className="truncate text-sm font-semibold text-white">
-                      {p.name}{' '}
-                      {p.isGoalkeeper && <span className="text-xs text-amber-400">(GK)</span>}
-                      <span className="ml-2 text-[11px] font-medium text-zinc-500">sem time</span>
-                    </p>
-                    <div className="grid grid-cols-2 gap-2">
-                      <button
-                        onClick={() => lastTeam && addLateToTeam(p.id, lastTeam.id)}
-                        className="min-h-[44px] truncate rounded-xl bg-emerald-500 px-2 text-xs font-extrabold text-zinc-950 active:scale-95"
-                      >
-                        Último da fila
-                      </button>
-                      <select
-                        value=""
-                        onChange={(e) => {
-                          if (e.target.value) addLateToTeam(p.id, e.target.value);
-                        }}
-                        className="min-h-[44px] rounded-xl border border-zinc-700 bg-zinc-950 px-2 text-xs font-bold text-white"
-                        aria-label={`Escolher time para ${p.name}`}
-                      >
-                        <option value="">Escolher time...</option>
-                        {teams.map((t) => (
-                          <option key={t.id} value={t.id}>
-                            {t.name}
-                          </option>
-                        ))}
-                      </select>
+              {lateArrivals.length > 0 && (
+                <div className="space-y-2">
+                  {lateArrivals.map((p) => (
+                    <div
+                      key={p.id}
+                      className="space-y-2 rounded-xl border border-zinc-800 bg-zinc-950/70 p-3"
+                    >
+                      <p className="truncate text-sm font-semibold text-white">
+                        {p.name}{' '}
+                        {p.isGoalkeeper && <span className="text-xs text-amber-400">(GK)</span>}
+                        <span className="ml-2 text-[11px] font-medium text-zinc-500">sem time</span>
+                      </p>
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          onClick={() => lastTeam && addLateToTeam(p.id, lastTeam.id)}
+                          className="min-h-[44px] truncate rounded-xl bg-emerald-500 px-2 text-xs font-extrabold text-zinc-950 active:scale-95"
+                        >
+                          Último da fila
+                        </button>
+                        <select
+                          value=""
+                          onChange={(e) => {
+                            if (e.target.value) addLateToTeam(p.id, e.target.value);
+                          }}
+                          className="min-h-[44px] rounded-xl border border-zinc-700 bg-zinc-950 px-2 text-xs font-bold text-white"
+                          aria-label={`Escolher time para ${p.name}`}
+                        >
+                          <option value="">Escolher time...</option>
+                          {teams.map((t) => (
+                            <option key={t.id} value={t.id}>
+                              {t.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            <form onSubmit={handleNewLate} className="space-y-2">
-              <p className="text-xs text-zinc-400">
-                {lateArrivals.length === 0
-                  ? 'Todos os presentes já estão em um time. Chegou mais alguém?'
-                  : 'Ou cadastre alguém novo direto em um time:'}
-              </p>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={lateName}
-                  onChange={(e) => setLateName(e.target.value)}
-                  placeholder="Nome do jogador..."
-                  className="min-h-[44px] min-w-0 flex-1 rounded-xl border border-zinc-700 bg-zinc-950 px-3 text-base text-white placeholder-zinc-500 focus:border-emerald-500 focus:outline-none"
-                />
-                <select
-                  value={lateTeamId || lastTeam?.id || ''}
-                  onChange={(e) => setLateTeamId(e.target.value)}
-                  className="min-h-[44px] w-[38%] rounded-xl border border-zinc-700 bg-zinc-950 px-2 text-xs font-bold text-white"
-                  aria-label="Time de destino"
-                >
-                  {teams.map((t) => (
-                    <option key={t.id} value={t.id}>
-                      {t.name}
-                    </option>
                   ))}
-                </select>
-              </div>
-              <button
-                type="submit"
-                disabled={!lateName.trim()}
-                className="flex min-h-[44px] w-full items-center justify-center gap-1.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 text-xs font-bold text-emerald-400 active:scale-95 disabled:opacity-40"
-              >
-                <UserPlus className="h-4 w-4" /> Adicionar ao time
-              </button>
-            </form>
-          </div>
+                </div>
+              )}
+
+              <form onSubmit={handleNewLate} className="space-y-2">
+                <p className="text-xs text-zinc-400">
+                  {lateArrivals.length === 0
+                    ? 'Todos os presentes já estão em um time. Chegou mais alguém?'
+                    : 'Ou cadastre alguém novo direto em um time:'}
+                </p>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={lateName}
+                    onChange={(e) => setLateName(e.target.value)}
+                    placeholder="Nome do jogador..."
+                    className="min-h-[44px] min-w-0 flex-1 rounded-xl border border-zinc-700 bg-zinc-950 px-3 text-base text-white placeholder-zinc-500 focus:border-emerald-500 focus:outline-none"
+                  />
+                  <select
+                    value={lateTeamId || lastTeam?.id || ''}
+                    onChange={(e) => setLateTeamId(e.target.value)}
+                    className="min-h-[44px] w-[38%] rounded-xl border border-zinc-700 bg-zinc-950 px-2 text-xs font-bold text-white"
+                    aria-label="Time de destino"
+                  >
+                    {teams.map((t) => (
+                      <option key={t.id} value={t.id}>
+                        {t.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <button
+                  type="submit"
+                  disabled={!lateName.trim()}
+                  className="flex min-h-[44px] w-full items-center justify-center gap-1.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 text-xs font-bold text-emerald-400 active:scale-95 disabled:opacity-40"
+                >
+                  <UserPlus className="h-4 w-4" /> Adicionar ao time
+                </button>
+              </form>
+            </div>
+          )}
         </div>
       )}
     </div>
