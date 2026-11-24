@@ -35,7 +35,7 @@ const normalize = (text: string): string =>
   text
     .toLowerCase()
     .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '');
+    .replace(/[\u0300-\u036f]/g, '');
 
 const StarPicker: React.FC<{ value: number; onChange: (v: number) => void }> = ({
   value,
@@ -51,7 +51,9 @@ const StarPicker: React.FC<{ value: number; onChange: (v: number) => void }> = (
         aria-label={`Nível ${star}`}
       >
         <Star
-          className={`h-5 w-5 ${star <= value ? 'fill-amber-400 text-amber-400' : 'text-zinc-700'}`}
+          className={`h-5 w-5 transition ${
+            star <= value ? 'fill-[#FBBF24] text-[#FBBF24]' : 'text-[#313A32]'
+          }`}
         />
       </button>
     ))}
@@ -78,23 +80,23 @@ const PlayerEditor: React.FC<PlayerEditorProps> = ({ player, onSave, onCancel })
   return (
     <form
       onSubmit={submit}
-      className="space-y-2 rounded-xl border border-amber-500/40 bg-zinc-900 p-3"
+      className="rp-card space-y-3 rounded-[20px] border-[#FBBF24]/45 p-3.5"
     >
       <input
         type="text"
         value={name}
         onChange={(e) => setName(e.target.value)}
         autoFocus
-        className="min-h-[44px] w-full rounded-xl border border-zinc-700 bg-zinc-950 px-3.5 text-base text-white focus:border-emerald-500 focus:outline-none"
+        className="rp-input w-full rounded-xl px-3.5 text-base font-semibold"
       />
       <div className="flex flex-wrap items-center justify-between gap-2">
         <button
           type="button"
           onClick={() => setIsGoalkeeper(!isGoalkeeper)}
-          className={`flex min-h-[44px] items-center gap-1.5 rounded-xl border px-3 text-xs font-semibold transition ${
+          className={`flex min-h-[44px] items-center gap-1.5 rounded-xl border px-3 text-xs font-bold transition ${
             isGoalkeeper
-              ? 'border-amber-500/50 bg-amber-500/20 text-amber-300'
-              : 'border-zinc-800 bg-zinc-950 text-zinc-400'
+              ? 'border-[#FBBF24]/45 bg-[#FBBF24]/15 text-[#FDE68A]'
+              : 'border-white/[0.085] bg-[#0B100D] text-[#879287]'
           }`}
         >
           <Shield className="h-4 w-4" />
@@ -106,14 +108,11 @@ const PlayerEditor: React.FC<PlayerEditorProps> = ({ player, onSave, onCancel })
         <button
           type="button"
           onClick={onCancel}
-          className="min-h-[44px] rounded-xl border border-zinc-700 bg-zinc-950 text-sm font-bold text-zinc-300"
+          className="rp-btn-secondary min-h-[44px] rounded-xl text-xs"
         >
           Cancelar
         </button>
-        <button
-          type="submit"
-          className="min-h-[44px] rounded-xl bg-emerald-500 text-sm font-extrabold text-zinc-950 active:scale-95"
-        >
+        <button type="submit" className="rp-btn-primary min-h-[44px] rounded-xl text-xs">
           Salvar
         </button>
       </div>
@@ -152,7 +151,6 @@ export const PlayersTab: React.FC<PlayersTabProps> = ({
 
   const presentCount = players.filter((p) => p.present).length;
 
-  // Posição de chegada (#1, #2...) entre os presentes
   const arrivalRank = useMemo(() => {
     const ordered = players
       .filter((p) => p.present)
@@ -197,23 +195,21 @@ export const PlayersTab: React.FC<PlayersTabProps> = ({
   return (
     <div className="space-y-4">
       {!readOnly && (
-        <form
-          onSubmit={handleSubmit}
-          className="space-y-3 rounded-2xl border border-zinc-800 bg-zinc-900/80 p-4"
-        >
+        <form onSubmit={handleSubmit} className="rp-card space-y-3 rounded-[24px] p-4">
           <div className="flex gap-2">
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Nome do jogador..."
-              className="min-h-[44px] min-w-0 flex-1 rounded-xl border border-zinc-700 bg-zinc-950 px-3.5 text-base text-white placeholder-zinc-500 focus:border-emerald-500 focus:outline-none"
+              className="rp-input min-w-0 flex-1 rounded-2xl px-3.5 text-base"
             />
             <button
               type="submit"
-              className="flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl bg-emerald-500 px-4 text-sm font-bold text-zinc-950 transition active:scale-95"
+              disabled={!name.trim()}
+              className="rp-btn-primary flex min-h-[46px] shrink-0 items-center justify-center gap-1.5 rounded-2xl px-4 text-sm disabled:opacity-40"
             >
-              <UserPlus className="h-4 w-4" />
+              <UserPlus className="h-4 w-4 stroke-[2.5]" />
               Add
             </button>
           </div>
@@ -222,10 +218,10 @@ export const PlayersTab: React.FC<PlayersTabProps> = ({
             <button
               type="button"
               onClick={() => setIsGoalkeeper(!isGoalkeeper)}
-              className={`flex min-h-[44px] items-center gap-1.5 rounded-xl border px-3 text-xs font-semibold transition ${
+              className={`flex min-h-[44px] items-center gap-1.5 rounded-xl border px-3 text-xs font-bold transition ${
                 isGoalkeeper
-                  ? 'border-amber-500/50 bg-amber-500/20 text-amber-300'
-                  : 'border-zinc-800 bg-zinc-950 text-zinc-400'
+                  ? 'border-[#FBBF24]/45 bg-[#FBBF24]/15 text-[#FDE68A]'
+                  : 'border-white/[0.085] bg-[#0B100D] text-[#879287] hover:text-[#C9D3C4]'
               }`}
             >
               <Shield className="h-4 w-4" />
@@ -233,24 +229,27 @@ export const PlayersTab: React.FC<PlayersTabProps> = ({
             </button>
 
             <div className="flex items-center">
-              <span className="mr-1 text-xs text-zinc-400">Nível:</span>
+              <span className="mr-1 font-mono text-[11px] font-bold uppercase tracking-[0.08em] text-[#879287]">
+                Nível
+              </span>
               <StarPicker value={skill} onChange={setSkill} />
             </div>
           </div>
         </form>
       )}
 
-      <div className="flex items-center justify-between gap-2">
-        <h2 className="text-sm font-bold uppercase tracking-wider text-zinc-400">
-          Presença ({presentCount}/{players.length})
-        </h2>
+      <div className="flex items-center justify-between gap-2 pt-1">
+        <h3 className="font-mono text-[11px] font-extrabold uppercase tracking-[0.14em] text-[#879287]">
+          Presença · <span className="text-[#BEF264]">{presentCount}</span>/{players.length}
+        </h3>
         {!readOnly && players.length === 0 && (
           <button
+            type="button"
             onClick={onLoadMockPlayers}
-            className="flex min-h-[44px] items-center gap-1.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 text-xs font-semibold text-emerald-400 hover:bg-emerald-500/20"
+            className="flex min-h-[42px] items-center gap-1.5 rounded-xl border border-[#BEF264]/30 bg-[#84CC16]/10 px-3 text-xs font-extrabold text-[#D9F99D] transition hover:bg-[#84CC16]/20"
           >
             <Sparkles className="h-3.5 w-3.5" />
-            Carregar 15 Teste
+            Carregar 15 teste
           </button>
         )}
       </div>
@@ -258,20 +257,20 @@ export const PlayersTab: React.FC<PlayersTabProps> = ({
       {players.length > 0 && (
         <div className="space-y-2.5">
           <div className="relative">
-            <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
+            <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#879287]" />
             <input
               type="search"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Buscar jogador..."
-              className="min-h-[44px] w-full rounded-xl border border-zinc-800 bg-zinc-900 pl-10 pr-10 text-base text-white placeholder-zinc-500 focus:border-emerald-500 focus:outline-none"
+              className="rp-input w-full rounded-2xl pl-10 pr-10 text-base"
             />
             {query && (
               <button
                 type="button"
                 onClick={() => setQuery('')}
                 aria-label="Limpar busca"
-                className="absolute right-0 top-0 flex h-11 w-11 items-center justify-center text-zinc-500"
+                className="absolute right-0 top-0 flex h-[46px] w-11 items-center justify-center text-[#879287] hover:text-[#F4F7F2]"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -279,41 +278,47 @@ export const PlayersTab: React.FC<PlayersTabProps> = ({
           </div>
 
           <div className="grid grid-cols-4 gap-1.5">
-            {filters.map((f) => (
-              <button
-                key={f.id}
-                onClick={() => setFilter(f.id)}
-                className={`min-h-[44px] rounded-xl border px-1 text-[11px] font-bold transition ${
-                  filter === f.id
-                    ? 'border-emerald-500 bg-emerald-500/15 text-emerald-400'
-                    : 'border-zinc-800 bg-zinc-900 text-zinc-400'
-                }`}
-              >
-                {f.label}
-                <span className="ml-1 text-[11px] opacity-70">{counts[f.id]}</span>
-              </button>
-            ))}
+            {filters.map((f) => {
+              const active = filter === f.id;
+              return (
+                <button
+                  key={f.id}
+                  type="button"
+                  onClick={() => setFilter(f.id)}
+                  className={`min-h-[42px] rounded-xl border px-1 text-[11px] font-bold transition ${
+                    active
+                      ? 'border-[#BEF264]/45 bg-[#84CC16]/15 text-[#D9F99D]'
+                      : 'border-white/[0.085] bg-[#111713] text-[#879287] hover:text-[#C9D3C4]'
+                  }`}
+                >
+                  {f.label}
+                  <span className="ml-1 font-mono text-[10px] opacity-75">{counts[f.id]}</span>
+                </button>
+              );
+            })}
           </div>
 
           {!readOnly && (
             <div className="grid grid-cols-2 gap-2">
               <button
+                type="button"
                 onClick={() => {
                   onSetAllPresence(true);
                   toast.show('Todos marcados como presentes');
                 }}
-                className="flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 text-xs font-bold text-emerald-400 active:scale-95"
+                className="flex min-h-[44px] items-center justify-center gap-1.5 rounded-2xl border border-[#BEF264]/30 bg-[#84CC16]/10 text-xs font-extrabold text-[#D9F99D] transition hover:bg-[#84CC16]/18"
               >
-                <CheckCheck className="h-4 w-4" /> Marcar Todos
+                <CheckCheck className="h-4 w-4" /> Marcar todos
               </button>
               <button
+                type="button"
                 onClick={() => {
                   onSetAllPresence(false);
                   toast.show('Todos desmarcados', 'info');
                 }}
-                className="flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl border border-zinc-700 bg-zinc-900 text-xs font-bold text-zinc-300 active:scale-95"
+                className="rp-btn-secondary flex min-h-[44px] items-center justify-center gap-1.5 rounded-2xl text-xs"
               >
-                <XCircle className="h-4 w-4" /> Desmarcar Todos
+                <XCircle className="h-4 w-4 text-[#879287]" /> Desmarcar todos
               </button>
             </div>
           )}
@@ -322,13 +327,13 @@ export const PlayersTab: React.FC<PlayersTabProps> = ({
 
       <div className="space-y-2">
         {players.length === 0 && readOnly && (
-          <p className="rounded-2xl border border-zinc-800 bg-zinc-900/70 py-8 text-center text-xs text-zinc-500">
+          <p className="rp-surface rounded-[22px] py-8 text-center text-xs text-[#879287]">
             Nenhum jogador cadastrado neste racha ainda.
           </p>
         )}
 
         {visible.length === 0 && players.length > 0 && (
-          <p className="py-6 text-center text-xs text-zinc-500">
+          <p className="py-6 text-center text-xs text-[#879287]">
             Nenhum jogador encontrado com esse filtro.
           </p>
         )}
@@ -356,30 +361,30 @@ export const PlayersTab: React.FC<PlayersTabProps> = ({
               <div
                 className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border transition ${
                   player.present
-                    ? 'border-emerald-500 bg-emerald-500 text-zinc-950'
-                    : 'border-zinc-700 bg-zinc-900'
+                    ? 'border-[#BEF264] bg-gradient-to-br from-[#D9F99D] to-[#A3E635] text-[#10160A]'
+                    : 'border-white/[0.14] bg-[#0B100D]'
                 }`}
               >
                 {player.present && <Check className="h-4 w-4 stroke-[3]" />}
               </div>
 
               <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="truncate font-semibold text-white">{player.name}</span>
+                <div className="flex items-center gap-1.5">
+                  <span className="truncate text-sm font-bold text-[#F4F7F2]">{player.name}</span>
                   {player.isGoalkeeper && (
-                    <span className="shrink-0 rounded bg-amber-500/20 px-1.5 py-0.5 text-[11px] font-bold text-amber-300">
-                      GK
+                    <span className="shrink-0 rounded-md border border-[#FBBF24]/35 bg-[#FBBF24]/12 px-1.5 py-0.5 font-mono text-[10px] font-extrabold text-[#FDE68A]">
+                      GOL
                     </span>
                   )}
                   {rank !== undefined && (
-                    <span className="shrink-0 rounded bg-emerald-500/15 px-1.5 py-0.5 text-[11px] font-bold text-emerald-300">
+                    <span className="shrink-0 rounded-md bg-[#84CC16]/15 px-1.5 py-0.5 font-mono text-[10px] font-extrabold text-[#BEF264]">
                       #{rank}
                     </span>
                   )}
                 </div>
                 <div className="flex items-center gap-0.5 pt-0.5">
                   {Array.from({ length: player.skill }).map((_, i) => (
-                    <Star key={i} className="h-3 w-3 fill-amber-400/80 text-amber-400/80" />
+                    <Star key={i} className="h-3 w-3 fill-[#FBBF24]/85 text-[#FBBF24]/85" />
                   ))}
                 </div>
               </div>
@@ -389,20 +394,21 @@ export const PlayersTab: React.FC<PlayersTabProps> = ({
           return (
             <div
               key={player.id}
-              className={`flex items-center justify-between rounded-xl border px-3 transition ${
+              className={`flex items-center justify-between rounded-[18px] border px-3 transition ${
                 player.present
-                  ? 'border-emerald-500/40 bg-zinc-900'
-                  : 'border-zinc-800/70 bg-zinc-950/60 opacity-60'
+                  ? 'border-[#BEF264]/28 bg-[#111713]'
+                  : 'border-white/[0.06] bg-[#0B100D]/75 opacity-60'
               }`}
             >
               {readOnly ? (
-                <div className="flex min-h-[56px] min-w-0 flex-1 items-center gap-3 text-left">
+                <div className="flex min-h-[58px] min-w-0 flex-1 items-center gap-3 text-left">
                   {rowContent}
                 </div>
               ) : (
                 <button
+                  type="button"
                   onClick={() => onTogglePresence(player.id)}
-                  className="flex min-h-[56px] min-w-0 flex-1 items-center gap-3 text-left"
+                  className="flex min-h-[58px] min-w-0 flex-1 items-center gap-3 text-left"
                 >
                   {rowContent}
                 </button>
@@ -411,15 +417,17 @@ export const PlayersTab: React.FC<PlayersTabProps> = ({
               {!readOnly && (
                 <div className="flex shrink-0 items-center">
                   <button
+                    type="button"
                     onClick={() => setEditingId(player.id)}
-                    className="flex h-11 w-11 items-center justify-center rounded-lg text-zinc-500 hover:bg-zinc-800 hover:text-amber-300"
+                    className="flex h-11 w-10 items-center justify-center rounded-xl text-[#879287] hover:bg-white/[0.05] hover:text-[#FDE68A]"
                     aria-label={`Editar ${player.name}`}
                   >
                     <Pencil className="h-4 w-4" />
                   </button>
                   <button
+                    type="button"
                     onClick={() => handleRemove(player)}
-                    className="flex h-11 w-11 items-center justify-center rounded-lg text-zinc-500 hover:bg-zinc-800 hover:text-red-400"
+                    className="flex h-11 w-10 items-center justify-center rounded-xl text-[#879287] hover:bg-white/[0.05] hover:text-[#F87171]"
                     aria-label={`Remover ${player.name}`}
                   >
                     <Trash2 className="h-4 w-4" />

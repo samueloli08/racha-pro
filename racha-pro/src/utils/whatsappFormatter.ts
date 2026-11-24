@@ -2,10 +2,15 @@ import { MatchRecord, Player, Team } from '../types/racha';
 import { RankingRow } from './stats';
 
 const COLOR_EMOJI: Record<string, string> = {
+  '#34d399': '🟢',
   '#10b981': '🟢',
+  '#fbbf24': '🟡',
   '#f59e0b': '🟡',
+  '#60a5fa': '🔵',
   '#3b82f6': '🔵',
+  '#f87171': '🔴',
   '#ef4444': '🔴',
+  '#c084fc': '🟣',
   '#a855f7': '🟣',
   '#e4e4e7': '⚪',
 };

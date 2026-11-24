@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { AlertCircle, Loader2, LogOut, RefreshCw, Trophy } from 'lucide-react';
+import { AlertCircle, Loader2, LogOut, RefreshCw } from 'lucide-react';
 import { AuthScreen } from './components/auth/AuthScreen';
 import { FirstRachaScreen } from './components/auth/FirstRachaScreen';
 import { RachasModal } from './components/auth/RachasModal';
@@ -10,6 +10,7 @@ import { MatchTab } from './components/match/MatchTab';
 import { PlayersTab } from './components/players/PlayersTab';
 import { SortTab } from './components/sort/SortTab';
 import { StatsTab } from './components/stats/StatsTab';
+import { BrandMark } from './components/ui/BrandMark';
 import { useToast } from './components/ui/Toast';
 import { useAuth } from './hooks/useAuth';
 import {
@@ -88,60 +89,62 @@ function RachaWorkspace({
   };
 
   const presentCount = state.players.filter((p) => p.present).length;
+  const sortLabel = state.settings.sortMode === 'balanced' ? 'EQUILIBRADO' : 'ALEATÓRIO';
   const pageIntro: Record<TabId, { eyebrow: string; title: string; description: string }> = readOnly
     ? {
         players: {
-          eyebrow: 'ELENCO DO RACHA',
-          title: 'Quem vai jogar?',
-          description: 'Acompanhe em tempo real quem está confirmado na lista de presença.',
+          eyebrow: `ELENCO · ${presentCount} PRESENTES`,
+          title: 'Quem está na quadra hoje',
+          description: 'Lista de presença atualizada ao vivo pelo organizador.',
         },
         sort: {
-          eyebrow: 'TIMES SORTEADOS',
-          title: 'Escalação em campo.',
-          description: 'Veja como ficaram divididos os times e a ordem da fila.',
+          eyebrow: `TIMES · ${state.teams.length} EQUIPES`,
+          title: 'Times de hoje',
+          description: 'Confira a divisão dos coletes e a ordem da fila.',
         },
         match: {
-          eyebrow: 'CENTRAL DA PARTIDA',
-          title: 'O jogo acontece aqui.',
-          description: 'Acompanhe o placar e os gols ao vivo.',
+          eyebrow: 'AO VIVO · SOMENTE LEITURA',
+          title: 'Placar em campo',
+          description: 'Acompanhe o placar e os lances ao vivo.',
         },
         stats: {
-          eyebrow: 'DESEMPENHO',
-          title: 'Os números do racha.',
-          description: 'Veja quem decide, quem assiste e como anda a temporada.',
+          eyebrow: `NÚMEROS · ${state.history.length} PARTIDAS`,
+          title: 'Quem decidiu o racha',
+          description: 'Artilharia, garçons, goleiros e histórico completo.',
         },
       }
     : {
         players: {
-          eyebrow: 'GESTÃO DO ELENCO',
-          title: 'Quem vai jogar?',
-          description: 'Confirme a presença e deixe o racha pronto para começar.',
+          eyebrow: `ELENCO · ${presentCount} PRESENTES`,
+          title: 'Quem está na quadra hoje',
+          description: 'Marque quem chegou e deixe o racha pronto para sortear.',
         },
         sort: {
-          eyebrow: 'MONTAGEM DOS TIMES',
-          title: 'Equilíbrio em campo.',
-          description: 'Monte equipes justas e organize a fila do próximo jogo.',
+          eyebrow: `SORTEIO · ${sortLabel}`,
+          title: 'Times de hoje',
+          description: 'Equilibre os coletes e ajuste qualquer jogador com um toque.',
         },
         match: {
-          eyebrow: 'CENTRAL DA PARTIDA',
-          title: 'O jogo acontece aqui.',
-          description: 'Controle o tempo, registre os gols e acompanhe o placar.',
+          eyebrow: 'AO VIVO',
+          title: 'Placar em campo',
+          description: 'Controle o cronômetro, registre os gols e gire a fila.',
         },
         stats: {
-          eyebrow: 'DESEMPENHO',
-          title: 'Os números do racha.',
-          description: 'Veja quem decide, quem assiste e como anda a temporada.',
+          eyebrow: `NÚMEROS · ${state.history.length} PARTIDAS`,
+          title: 'Quem decidiu o racha',
+          description: 'Artilharia, assistências, card de Stories e resumo pro grupo.',
         },
       };
   const intro = pageIntro[activeTab];
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-zinc-950 pb-24 text-zinc-100">
+    <div className="min-h-screen overflow-x-hidden pb-24 text-[#F4F7F2]">
       <Header
         rachaName={racha.name}
         presentCount={presentCount}
         matchesCount={state.history.length}
         syncStatus={store.syncStatus}
+        isMatchRunning={state.activeMatch.isRunning}
         readOnly={readOnly}
         isLoggedIn={isLoggedIn}
         onRetrySync={store.retrySync}
@@ -153,13 +156,13 @@ function RachaWorkspace({
 
       <main className="mx-auto max-w-2xl px-4 pt-5 sm:px-6 sm:pt-7">
         {store.authExpired && !readOnly && (
-          <div className="mb-4 flex items-center justify-between gap-3 rounded-2xl border border-amber-400/40 bg-amber-500/10 px-4 py-3 text-xs text-amber-200">
+          <div className="mb-4 flex items-center justify-between gap-3 rounded-2xl border border-[#FBBF24]/40 bg-[#FBBF24]/10 px-4 py-3 text-xs text-[#FDE68A]">
             <span>Sua sessão expirou e as alterações estão salvas só neste aparelho.</span>
             {onSignOut && (
               <button
                 type="button"
                 onClick={onSignOut}
-                className="shrink-0 rounded-xl bg-amber-400 px-3 text-xs font-extrabold text-zinc-950"
+                className="min-h-[40px] shrink-0 rounded-xl bg-[#FBBF24] px-3 text-xs font-extrabold text-[#1A1405]"
               >
                 Entrar de novo
               </button>
@@ -168,7 +171,7 @@ function RachaWorkspace({
         )}
 
         {store.linkRevoked && readOnly && (
-          <div className="mb-4 rounded-2xl border border-amber-400/40 bg-amber-500/10 px-4 py-3 text-xs text-amber-200">
+          <div className="mb-4 rounded-2xl border border-[#FBBF24]/40 bg-[#FBBF24]/10 px-4 py-3 text-xs text-[#FDE68A]">
             Este link foi pausado ou alterado pelo organizador. Peça o novo link no grupo para
             continuar recebendo atualizações.
           </div>
@@ -219,6 +222,7 @@ function RachaWorkspace({
               teams={state.teams}
               players={state.players}
               durationSeconds={state.settings.matchDurationSeconds}
+              matchNumber={state.history.length + 1}
               readOnly={readOnly}
               onToggleTimer={store.toggleTimer}
               onResetTimer={store.resetTimer}
@@ -234,6 +238,7 @@ function RachaWorkspace({
 
           {activeTab === 'stats' && (
             <StatsTab
+              rachaName={racha.name}
               players={state.players}
               history={state.history}
               allTimeStats={state.allTimeStats}
@@ -259,12 +264,10 @@ function RachaWorkspace({
 
 function FullscreenLoader({ label }: { label: string }) {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center gap-4 px-4 text-center text-zinc-300">
-      <div className="brand-mark h-14 w-14 rounded-2xl">
-        <Trophy className="h-7 w-7" strokeWidth={2.5} />
-      </div>
-      <div className="flex items-center gap-2 text-xs font-bold text-zinc-400">
-        <Loader2 className="h-4 w-4 animate-spin text-lime-300" />
+    <div className="flex min-h-screen flex-col items-center justify-center gap-4 px-4 text-center text-[#C9D3C4]">
+      <BrandMark size="lg" />
+      <div className="flex items-center gap-2 font-mono text-xs font-bold tracking-[0.04em] text-[#879287]">
+        <Loader2 className="h-4 w-4 animate-spin text-[#BEF264]" />
         <span>{label}</span>
       </div>
     </div>
@@ -340,16 +343,16 @@ export function App() {
 
     if (shared.notFound || shared.error || !shared.racha) {
       return (
-        <div className="flex min-h-screen flex-col items-center justify-center px-4 text-center text-zinc-100">
-          <div className="w-full max-w-sm space-y-4 rounded-3xl border border-white/10 bg-[#121914]/95 p-6">
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-red-500/15 text-red-300">
+        <div className="flex min-h-screen flex-col items-center justify-center px-4 text-center text-[#F4F7F2]">
+          <div className="rp-card w-full max-w-sm space-y-4 rounded-[28px] p-6">
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[#F87171]/15 text-[#F87171]">
               <AlertCircle className="h-6 w-6" />
             </div>
             <div>
-              <h2 className="text-lg font-extrabold text-white">
+              <h2 className="text-lg font-extrabold tracking-[-0.03em] text-[#F7FAEF]">
                 {shared.notFound ? 'Racha não encontrado' : 'Erro ao abrir o racha'}
               </h2>
-              <p className="mt-1 text-xs leading-relaxed text-zinc-400">
+              <p className="mt-1 text-xs leading-relaxed text-[#879287]">
                 {shared.notFound
                   ? 'Verifique se o link está completo ou se o organizador pausou o compartilhamento.'
                   : shared.error || 'Não foi possível carregar este racha agora.'}
@@ -359,14 +362,14 @@ export function App() {
               <button
                 type="button"
                 onClick={() => void shared.reload()}
-                className="flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl border border-white/10 bg-zinc-900 text-xs font-bold text-zinc-200"
+                className="rp-btn-secondary flex min-h-[44px] items-center justify-center gap-1.5 rounded-2xl text-xs"
               >
                 <RefreshCw className="h-3.5 w-3.5" /> Tentar de novo
               </button>
               <button
                 type="button"
                 onClick={exitShareMode}
-                className="flex min-h-[44px] items-center justify-center rounded-xl bg-gradient-to-br from-lime-200 to-lime-400 text-xs font-extrabold text-zinc-950"
+                className="rp-btn-primary flex min-h-[44px] items-center justify-center rounded-2xl text-xs"
               >
                 {auth.user ? 'Meus rachas' : 'Fazer login'}
               </button>
@@ -458,17 +461,19 @@ export function App() {
 
   if (owned.error && owned.rachas.length === 0) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center px-4 text-center text-zinc-100">
-        <div className="w-full max-w-md space-y-4 rounded-3xl border border-white/10 bg-[#121914]/95 p-6">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-red-500/15 text-red-300">
+      <div className="flex min-h-screen flex-col items-center justify-center px-4 text-center text-[#F4F7F2]">
+        <div className="rp-card w-full max-w-md space-y-4 rounded-[28px] p-6">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[#F87171]/15 text-[#F87171]">
             <AlertCircle className="h-6 w-6" />
           </div>
           <div>
-            <h2 className="text-lg font-extrabold text-white">Erro ao carregar seus rachas</h2>
-            <p className="mt-1 text-xs leading-relaxed text-zinc-400">{owned.error}</p>
-            <p className="mt-2 text-[11px] text-zinc-500">
+            <h2 className="text-lg font-extrabold tracking-[-0.03em] text-[#F7FAEF]">
+              Erro ao carregar seus rachas
+            </h2>
+            <p className="mt-1 text-xs leading-relaxed text-[#879287]">{owned.error}</p>
+            <p className="mt-2 text-[11px] text-[#879287]">
               Certifique-se de ter executado o script{' '}
-              <code className="font-mono text-lime-300">supabase/auth_rachas.sql</code> no SQL
+              <code className="font-mono text-[#BEF264]">supabase/auth_rachas.sql</code> no SQL
               Editor do Supabase.
             </p>
           </div>
@@ -476,14 +481,14 @@ export function App() {
             <button
               type="button"
               onClick={() => void owned.reload()}
-              className="flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl bg-gradient-to-br from-lime-200 to-lime-400 text-xs font-extrabold text-zinc-950"
+              className="rp-btn-primary flex min-h-[44px] items-center justify-center gap-1.5 rounded-2xl text-xs"
             >
               <RefreshCw className="h-3.5 w-3.5" /> Tentar novamente
             </button>
             <button
               type="button"
               onClick={() => void auth.signOut()}
-              className="flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl border border-white/10 bg-zinc-900 text-xs font-bold text-zinc-300"
+              className="rp-btn-secondary flex min-h-[44px] items-center justify-center gap-1.5 rounded-2xl text-xs"
             >
               <LogOut className="h-3.5 w-3.5" /> Sair
             </button>

@@ -1,11 +1,11 @@
 import { Player, SortMode, Team } from '../types/racha';
 
 export const TEAM_PRESETS = [
-  { name: 'Time Verde', color: '#10b981' },
-  { name: 'Time Amarelo', color: '#f59e0b' },
-  { name: 'Time Azul', color: '#3b82f6' },
-  { name: 'Time Vermelho', color: '#ef4444' },
-  { name: 'Time Roxo', color: '#a855f7' },
+  { name: 'Time Verde', color: '#34d399' },
+  { name: 'Time Amarelo', color: '#fbbf24' },
+  { name: 'Time Azul', color: '#60a5fa' },
+  { name: 'Time Vermelho', color: '#f87171' },
+  { name: 'Time Roxo', color: '#c084fc' },
   { name: 'Time Branco', color: '#e4e4e7' },
 ];
 

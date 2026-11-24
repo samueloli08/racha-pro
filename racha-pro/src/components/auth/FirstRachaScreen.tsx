@@ -1,7 +1,8 @@
 import React, { useMemo, useState } from 'react';
-import { Check, Loader2, LogOut, Plus, Sparkles, Trophy } from 'lucide-react';
+import { Check, Loader2, LogOut, Plus, Sparkles } from 'lucide-react';
 import { readLegacyLocalState } from '../../hooks/useRachas';
 import { RachaStoreState } from '../../types/racha';
+import { BrandMark } from '../ui/BrandMark';
 
 interface FirstRachaScreenProps {
   userEmail: string;
@@ -39,41 +40,39 @@ export const FirstRachaScreen: React.FC<FirstRachaScreenProps> = ({
   };
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center px-4 py-10 text-zinc-100">
+    <div className="flex min-h-screen flex-col items-center justify-center px-4 py-10 text-[#F4F7F2]">
       <div className="w-full max-w-md space-y-6">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2.5">
-            <div className="brand-mark">
-              <Trophy className="h-5 w-5" strokeWidth={2.5} />
-            </div>
+            <BrandMark size="md" />
             <div>
-              <p className="text-[11px] font-bold uppercase tracking-wider text-lime-300">
-                Bem-vindo
-              </p>
-              <p className="max-w-[200px] truncate text-xs text-zinc-400">{userEmail}</p>
+              <p className="rp-eyebrow">BEM-VINDO</p>
+              <p className="max-w-[200px] truncate text-xs text-[#879287]">{userEmail}</p>
             </div>
           </div>
           <button
             type="button"
             onClick={onSignOut}
-            className="inline-flex min-h-[44px] items-center gap-1.5 rounded-xl border border-white/10 bg-zinc-900/70 px-3 text-xs font-bold text-zinc-300 hover:border-red-400/40 hover:text-red-300"
+            className="rp-btn-secondary inline-flex min-h-[44px] items-center gap-1.5 rounded-2xl px-3.5 text-xs hover:border-[#F87171]/40 hover:text-[#FCA5A5]"
           >
             <LogOut className="h-3.5 w-3.5" />
             Sair
           </button>
         </div>
 
-        <div className="rounded-3xl border border-white/10 bg-[#121914]/95 p-6 shadow-2xl shadow-black/40">
+        <div className="rp-card rounded-[28px] p-6">
           <p className="page-eyebrow">PRIMEIRO PASSO</p>
-          <h2 className="text-2xl font-black tracking-tight text-white">Crie seu primeiro racha</h2>
-          <p className="mt-1.5 text-xs leading-relaxed text-zinc-400">
-            Você pode ter quantos rachas quiser na sua conta — cada um com seu elenco, histórico e
-            link de leitura próprio.
+          <h2 className="text-[26px] font-extrabold leading-tight tracking-[-0.055em] text-[#F7FAEF]">
+            Crie seu primeiro racha
+          </h2>
+          <p className="mt-2 text-xs leading-relaxed text-[#879287]">
+            Cada racha tem seu próprio elenco, histórico e link de leitura ao vivo para mandar no
+            grupo.
           </p>
 
           <form onSubmit={handleSubmit} className="mt-5 space-y-4">
             <div>
-              <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-zinc-400">
+              <label className="mb-1.5 block font-mono text-[11px] font-extrabold uppercase tracking-[0.12em] text-[#879287]">
                 Nome do racha
               </label>
               <input
@@ -83,7 +82,7 @@ export const FirstRachaScreen: React.FC<FirstRachaScreenProps> = ({
                 maxLength={48}
                 autoFocus
                 placeholder="Ex: Racha de Quarta"
-                className="min-h-[46px] w-full rounded-xl border border-white/10 bg-zinc-950/80 px-3.5 text-base text-white placeholder-zinc-500 focus:border-lime-300/70 focus:outline-none"
+                className="rp-input w-full rounded-2xl px-3.5 text-base"
               />
               <div className="mt-2 flex flex-wrap gap-1.5">
                 {SUGGESTIONS.map((s) => (
@@ -91,7 +90,7 @@ export const FirstRachaScreen: React.FC<FirstRachaScreenProps> = ({
                     key={s}
                     type="button"
                     onClick={() => setName(s)}
-                    className="rounded-lg border border-white/10 bg-zinc-950/70 px-2.5 py-1.5 text-[11px] font-semibold text-zinc-400 transition hover:border-lime-300/40 hover:text-lime-200"
+                    className="rp-well rounded-xl px-2.5 py-1.5 text-[11px] font-bold text-[#C9D3C4] transition hover:border-[#BEF264]/40 hover:text-[#D9F99D]"
                   >
                     {s}
                   </button>
@@ -105,25 +104,25 @@ export const FirstRachaScreen: React.FC<FirstRachaScreenProps> = ({
                 onClick={() => setImportLegacy((v) => !v)}
                 className={`flex w-full items-start gap-3 rounded-2xl border p-3.5 text-left transition ${
                   importLegacy
-                    ? 'border-lime-300/50 bg-lime-400/10'
-                    : 'border-white/10 bg-zinc-950/60'
+                    ? 'border-[#BEF264]/45 bg-[#84CC16]/10'
+                    : 'border-white/[0.085] bg-[#0B100D]'
                 }`}
               >
                 <div
                   className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border ${
                     importLegacy
-                      ? 'border-lime-300 bg-lime-300 text-zinc-950'
-                      : 'border-zinc-700 bg-zinc-900'
+                      ? 'border-[#BEF264] bg-[#BEF264] text-[#10160A]'
+                      : 'border-white/20 bg-[#111713]'
                   }`}
                 >
                   {importLegacy && <Check className="h-3.5 w-3.5 stroke-[3]" />}
                 </div>
                 <div className="min-w-0">
-                  <p className="flex items-center gap-1.5 text-xs font-bold text-white">
-                    <Sparkles className="h-3.5 w-3.5 text-lime-300" />
+                  <p className="flex items-center gap-1.5 text-xs font-bold text-[#F4F7F2]">
+                    <Sparkles className="h-3.5 w-3.5 text-[#BEF264]" />
                     Importar dados salvos neste aparelho
                   </p>
-                  <p className="mt-0.5 text-[11px] text-zinc-400">
+                  <p className="mt-0.5 text-[11px] text-[#879287]">
                     Encontramos {legacyData.players?.length ?? 0} jogador(es) salvos localmente
                     antes do login.
                   </p>
@@ -132,7 +131,7 @@ export const FirstRachaScreen: React.FC<FirstRachaScreenProps> = ({
             )}
 
             {error && (
-              <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-3.5 py-2.5 text-xs font-medium text-red-300">
+              <div className="rounded-2xl border border-[#F87171]/35 bg-[#F87171]/10 px-3.5 py-2.5 text-xs font-medium text-[#FCA5A5]">
                 {error}
               </div>
             )}
@@ -140,9 +139,13 @@ export const FirstRachaScreen: React.FC<FirstRachaScreenProps> = ({
             <button
               type="submit"
               disabled={submitting || !name.trim()}
-              className="flex min-h-[48px] w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-br from-lime-200 to-lime-400 text-sm font-extrabold text-zinc-950 shadow-lg shadow-lime-400/15 transition active:scale-[0.98] disabled:opacity-50"
+              className="rp-btn-primary flex min-h-[50px] w-full items-center justify-center gap-2 rounded-[18px] text-sm disabled:opacity-50"
             >
-              {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4 stroke-[3]" />}
+              {submitting ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Plus className="h-4 w-4 stroke-[3]" />
+              )}
               Criar racha
             </button>
           </form>
