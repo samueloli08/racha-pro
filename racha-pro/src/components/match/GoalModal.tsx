@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X } from 'lucide-react';
+import { CornerDownRight, ShieldAlert, UserCheck, X } from 'lucide-react';
 import { Player, Team } from '../../types/racha';
 
 interface GoalModalProps {
@@ -25,15 +25,30 @@ export const GoalModal: React.FC<GoalModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center modal-backdrop p-4 sm:items-center">
-      <div className="max-h-[92vh] w-full max-w-md animate-sheet-in space-y-4 overflow-y-auto rounded-3xl border border-white/10 bg-[#151d16] p-5 shadow-2xl shadow-black/60">
-        <div className="flex items-center justify-between">
-          <h3 className="text-base font-extrabold text-white">
-            ⚽ Gol — <span style={{ color: team.color }}>{team.name}</span>
-          </h3>
+    <div
+      className="modal-backdrop fixed inset-0 z-50 flex items-end justify-center p-4 sm:items-center"
+      onClick={onClose}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="rp-card max-h-[90vh] w-full max-w-md animate-sheet-in space-y-4 overflow-y-auto rounded-[28px] p-5"
+      >
+        <div className="flex items-center justify-between gap-2">
+          <div className="min-w-0">
+            <p className="rp-eyebrow">{scorerId ? 'PASSO 2 DE 2' : 'PASSO 1 DE 2'}</p>
+            <h3 className="flex items-center gap-2 text-base font-extrabold tracking-[-0.03em] text-[#F7FAEF]">
+              <i
+                className="block h-3 w-3 shrink-0 rounded-full"
+                style={{ backgroundColor: team.color }}
+              />
+              <span className="truncate">Gol · {team.name}</span>
+            </h3>
+          </div>
           <button
+            type="button"
             onClick={onClose}
-            className="flex h-11 w-11 items-center justify-center rounded-full bg-zinc-800 text-zinc-400 hover:text-white"
+            aria-label="Fechar"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/[0.085] bg-[#0B100D] text-[#879287] hover:text-[#F4F7F2]"
           >
             <X className="h-5 w-5" />
           </button>
@@ -41,48 +56,58 @@ export const GoalModal: React.FC<GoalModalProps> = ({
 
         {!scorerId ? (
           <div className="space-y-2">
-            <p className="text-xs font-bold uppercase tracking-wider text-zinc-400">
-              1. Quem marcou o gol?
+            <p className="font-mono text-[11px] font-extrabold uppercase tracking-[0.12em] text-[#879287]">
+              Quem marcou o gol?
             </p>
             <div className="grid grid-cols-1 gap-2">
               {teamPlayers.map((player) => (
                 <button
                   key={player.id}
+                  type="button"
                   onClick={() => setScorerId(player.id)}
-                  className="rounded-xl border border-zinc-800 bg-zinc-950 min-h-[48px] px-4 py-3 text-left text-sm font-bold text-white transition hover:border-emerald-500"
+                  className="rp-well flex min-h-[48px] items-center justify-between rounded-2xl px-4 py-3 text-left text-sm font-bold text-[#F4F7F2] transition hover:border-[#BEF264]/45 hover:text-[#D9F99D]"
                 >
-                  {player.name}
+                  <span className="truncate">{player.name}</span>
+                  {player.isGoalkeeper && (
+                    <span className="font-mono text-[10px] font-extrabold text-[#FDE68A]">GOL</span>
+                  )}
                 </button>
               ))}
               <button
+                type="button"
                 onClick={() => onConfirm('own_goal', null)}
-                className="rounded-xl border border-red-500/30 bg-red-500/10 min-h-[48px] px-4 py-3 text-left text-sm font-bold text-red-400"
+                className="flex min-h-[48px] items-center gap-2 rounded-2xl border border-[#F87171]/30 bg-[#F87171]/10 px-4 py-3 text-left text-sm font-bold text-[#FCA5A5] transition hover:bg-[#F87171]/18"
               >
-                Gol Contra
+                <ShieldAlert className="h-4 w-4 shrink-0" />
+                Gol contra
               </button>
             </div>
           </div>
         ) : (
           <div className="space-y-2">
-            <p className="text-xs font-bold uppercase tracking-wider text-zinc-400">
-              2. Quem deu a assistência?
+            <p className="font-mono text-[11px] font-extrabold uppercase tracking-[0.12em] text-[#879287]">
+              Quem deu a assistência?
             </p>
             <div className="grid grid-cols-1 gap-2">
               <button
+                type="button"
                 onClick={() => handleSelectAssist(null)}
-                className="rounded-xl border border-emerald-500/40 bg-emerald-500/15 min-h-[48px] px-4 py-3 text-left text-sm font-bold text-emerald-300"
+                className="flex min-h-[48px] items-center gap-2 rounded-2xl border border-[#BEF264]/40 bg-[#84CC16]/12 px-4 py-3 text-left text-sm font-extrabold text-[#D9F99D] transition hover:bg-[#84CC16]/20"
               >
-                Jogada Individual / Sem Assistência
+                <UserCheck className="h-4 w-4 shrink-0" />
+                Jogada individual / sem assistência
               </button>
               {teamPlayers
                 .filter((p) => p.id !== scorerId)
                 .map((player) => (
                   <button
                     key={player.id}
+                    type="button"
                     onClick={() => handleSelectAssist(player.id)}
-                    className="rounded-xl border border-zinc-800 bg-zinc-950 min-h-[48px] px-4 py-3 text-left text-sm font-bold text-white transition hover:border-emerald-500"
+                    className="rp-well flex min-h-[48px] items-center gap-2 rounded-2xl px-4 py-3 text-left text-sm font-bold text-[#F4F7F2] transition hover:border-[#BEF264]/45 hover:text-[#D9F99D]"
                   >
-                    👟 {player.name}
+                    <CornerDownRight className="h-4 w-4 shrink-0 text-[#879287]" />
+                    <span className="truncate">{player.name}</span>
                   </button>
                 ))}
             </div>

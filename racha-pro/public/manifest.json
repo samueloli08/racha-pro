@@ -1,11 +1,11 @@
 {
-  "name": "RachaPro — Controle de Pelada",
+  "name": "RachaPro — O placar da sua pelada",
   "short_name": "RachaPro",
-  "description": "Gestão de racha, sorteio de times, cronômetro e artilharia em tempo real.",
+  "description": "O placar da sua pelada: organize jogadores, sorteie times equilibrados e acompanhe partidas ao vivo.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#09090b",
-  "theme_color": "#10b981",
+  "background_color": "#080B0A",
+  "theme_color": "#84CC16",
   "icons": [
     {
       "src": "/favicon.svg",

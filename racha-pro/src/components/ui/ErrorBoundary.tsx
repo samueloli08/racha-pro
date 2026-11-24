@@ -24,21 +24,23 @@ export class ErrorBoundary extends React.Component<
   render() {
     if (this.state.hasError) {
       return (
-        <div className="flex min-h-screen flex-col items-center justify-center bg-zinc-950 px-4 text-center text-zinc-100">
-          <div className="w-full max-w-sm space-y-4 rounded-3xl border border-white/10 bg-[#121914] p-6">
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-500/15 text-amber-300">
+        <div className="flex min-h-screen flex-col items-center justify-center bg-[#080B0A] px-4 text-center text-[#F4F7F2]">
+          <div className="rp-card w-full max-w-sm space-y-4 rounded-[28px] p-6">
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[#FBBF24]/15 text-[#FBBF24]">
               <AlertTriangle className="h-6 w-6" />
             </div>
             <div>
-              <h1 className="text-lg font-extrabold text-white">Algo deu errado</h1>
-              <p className="mt-1 text-xs leading-relaxed text-zinc-400">
-                Ocorreu um erro inesperado na tela. Recarregue o aplicativo para continuar.
+              <h1 className="text-lg font-extrabold tracking-[-0.03em] text-[#F7FAEF]">
+                Algo saiu de linha
+              </h1>
+              <p className="mt-1 text-xs leading-relaxed text-[#879287]">
+                Ocorreu um erro inesperado na tela. Recarregue o aplicativo para voltar ao jogo.
               </p>
             </div>
             <button
               type="button"
               onClick={() => window.location.reload()}
-              className="flex min-h-[46px] w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-br from-lime-200 to-lime-400 text-xs font-extrabold text-zinc-950"
+              className="rp-btn-primary flex min-h-[48px] w-full items-center justify-center gap-2 rounded-2xl text-xs"
             >
               <RefreshCw className="h-4 w-4" />
               Recarregar aplicativo

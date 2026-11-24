@@ -1,21 +1,14 @@
 import React from 'react';
-import {
-  ChevronDown,
-  Cloud,
-  CloudOff,
-  Eye,
-  Link2,
-  Loader2,
-  LogIn,
-  Trophy,
-} from 'lucide-react';
+import { ChevronDown, CloudOff, Eye, Link2, Loader2, LogIn } from 'lucide-react';
 import { SyncStatus } from '../../types/racha';
+import { BrandMark } from '../ui/BrandMark';
 
 interface HeaderProps {
   rachaName: string;
   presentCount: number;
   matchesCount: number;
   syncStatus: SyncStatus;
+  isMatchRunning?: boolean;
   readOnly: boolean;
   isLoggedIn: boolean;
   onRetrySync: () => void;
@@ -25,38 +18,12 @@ interface HeaderProps {
   onBackToMyRachas?: () => void;
 }
 
-const SYNC_UI: Record<
-  SyncStatus,
-  { label: string; readLabel: string; icon: React.ReactNode; tone: string; hint: string }
-> = {
-  synced: {
-    label: 'Sincronizado',
-    readLabel: 'Ao vivo',
-    icon: <Cloud className="h-3.5 w-3.5" />,
-    tone: 'sync-online',
-    hint: 'Tudo salvo na nuvem',
-  },
-  saving: {
-    label: 'Salvando...',
-    readLabel: 'Atualizando...',
-    icon: <Loader2 className="h-3.5 w-3.5 animate-spin" />,
-    tone: 'sync-saving',
-    hint: 'Enviando alterações para a nuvem',
-  },
-  offline: {
-    label: 'Offline',
-    readLabel: 'Offline',
-    icon: <CloudOff className="h-3.5 w-3.5" />,
-    tone: 'sync-offline',
-    hint: 'Sem conexão. Toque para tentar sincronizar',
-  },
-};
-
 export const Header: React.FC<HeaderProps> = ({
   rachaName,
   presentCount,
   matchesCount,
   syncStatus,
+  isMatchRunning = false,
   readOnly,
   isLoggedIn,
   onRetrySync,
@@ -65,23 +32,42 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenAuth,
   onBackToMyRachas,
 }) => {
-  const ui = SYNC_UI[syncStatus];
-  const syncLabel = readOnly ? ui.readLabel : ui.label;
+  const isLivePill = syncStatus === 'synced' && (isMatchRunning || readOnly);
+
+  const syncMeta = (() => {
+    if (syncStatus === 'saving') {
+      return {
+        label: readOnly ? 'Atualizando' : 'Salvando',
+        tone: 'sync-saving',
+        hint: 'Enviando alterações para a nuvem',
+      };
+    }
+    if (syncStatus === 'offline') {
+      return {
+        label: 'Offline',
+        tone: 'sync-offline',
+        hint: 'Sem conexão. Toque para tentar sincronizar',
+      };
+    }
+    return {
+      label: isLivePill ? 'Ao vivo' : 'Sincronizado',
+      tone: 'sync-online',
+      hint: readOnly ? 'Recebendo o placar em tempo real' : 'Tudo salvo na nuvem',
+    };
+  })();
 
   return (
     <header className="app-header">
       <div className="mx-auto flex max-w-2xl items-center justify-between gap-2 px-4 py-3 sm:px-6">
         <div className="flex min-w-0 items-center gap-2.5">
-          <div className="brand-mark shrink-0">
-            <Trophy className="h-5 w-5" strokeWidth={2.5} />
-          </div>
+          <BrandMark size="md" />
           <div className="min-w-0">
             {readOnly ? (
               <div className="flex items-center gap-1.5">
-                <h1 className="truncate text-[16px] font-extrabold tracking-[-0.04em] text-white">
+                <h1 className="truncate text-[16px] font-extrabold leading-tight tracking-[-0.04em] text-[#F4F7F2]">
                   {rachaName}
                 </h1>
-                <span className="inline-flex shrink-0 items-center gap-1 rounded-md border border-amber-400/30 bg-amber-400/10 px-1.5 py-0.5 font-mono text-[10px] font-extrabold uppercase text-amber-300">
+                <span className="inline-flex shrink-0 items-center gap-1 rounded-md border border-[#FBBF24]/35 bg-[#FBBF24]/10 px-1.5 py-0.5 font-mono text-[10px] font-extrabold uppercase tracking-[0.06em] text-[#FDE68A]">
                   <Eye className="h-3 w-3" />
                   Leitura
                 </span>
@@ -91,17 +77,17 @@ export const Header: React.FC<HeaderProps> = ({
                 type="button"
                 onClick={onOpenRachas}
                 title="Trocar de racha ou gerenciar conta"
-                className="group flex max-w-full items-center gap-1 rounded-lg text-left transition hover:text-lime-300"
+                className="group flex max-w-full items-center gap-1 rounded-lg text-left transition hover:text-[#D9F99D]"
               >
-                <h1 className="truncate text-[16px] font-extrabold tracking-[-0.04em] text-white group-hover:text-lime-200">
+                <h1 className="truncate text-[16px] font-extrabold leading-tight tracking-[-0.04em] text-[#F4F7F2] group-hover:text-[#D9F99D]">
                   {rachaName}
                 </h1>
-                <ChevronDown className="h-4 w-4 shrink-0 text-lime-300 transition group-hover:translate-y-0.5" />
+                <ChevronDown className="h-4 w-4 shrink-0 text-[#BEF264] transition group-hover:translate-y-0.5" />
               </button>
             )}
-            <p className="truncate text-[11px] font-medium text-zinc-400">
-              {presentCount} presentes <span className="mx-1 text-zinc-700">/</span> {matchesCount}{' '}
-              partidas hoje
+            <p className="truncate text-[11px] font-medium text-[#879287]">
+              {presentCount} presentes <span className="mx-1 text-[#4B554C]">/</span> {matchesCount}{' '}
+              {matchesCount === 1 ? 'partida hoje' : 'partidas hoje'}
             </p>
           </div>
         </div>
@@ -113,7 +99,7 @@ export const Header: React.FC<HeaderProps> = ({
               onClick={onCopyShareLink}
               title="Copiar link somente leitura para o grupo"
               aria-label="Copiar link somente leitura"
-              className="flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-zinc-900/70 text-lime-300 transition hover:border-lime-300/40 hover:bg-lime-400/10 active:scale-95"
+              className="flex h-11 w-11 items-center justify-center rounded-full border border-white/[0.11] bg-[#111713] text-[#BEF264] transition hover:border-[#BEF264]/40 hover:bg-[#84CC16]/10"
             >
               <Link2 className="h-4 w-4" />
             </button>
@@ -122,13 +108,18 @@ export const Header: React.FC<HeaderProps> = ({
           <button
             type="button"
             onClick={onRetrySync}
-            title={ui.hint}
-            aria-label={`${syncLabel}. ${ui.hint}`}
-            className={`sync-pill ${ui.tone}`}
+            title={syncMeta.hint}
+            aria-label={`${syncMeta.label}. ${syncMeta.hint}`}
+            className={`sync-pill min-h-[44px] ${syncMeta.tone}`}
           >
-            {ui.icon}
-            <span className="hidden sm:inline">{syncLabel}</span>
-            <span className="sync-dot" />
+            {syncStatus === 'saving' ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : syncStatus === 'offline' ? (
+              <CloudOff className="h-3.5 w-3.5" />
+            ) : (
+              <span className="sync-dot" />
+            )}
+            <span className={isLivePill ? 'inline' : 'hidden sm:inline'}>{syncMeta.label}</span>
           </button>
 
           {readOnly &&
@@ -136,7 +127,7 @@ export const Header: React.FC<HeaderProps> = ({
               <button
                 type="button"
                 onClick={onBackToMyRachas}
-                className="flex min-h-[44px] items-center gap-1.5 rounded-full border border-lime-300/30 bg-lime-400/10 px-3 text-xs font-extrabold text-lime-200 transition hover:bg-lime-400/20"
+                className="flex min-h-[44px] items-center gap-1.5 rounded-full border border-[#BEF264]/30 bg-[#84CC16]/10 px-3 text-xs font-extrabold text-[#D9F99D] transition hover:bg-[#84CC16]/20"
               >
                 Meus rachas
               </button>
@@ -144,9 +135,9 @@ export const Header: React.FC<HeaderProps> = ({
               <button
                 type="button"
                 onClick={onOpenAuth}
-                className="flex min-h-[44px] items-center gap-1.5 rounded-full border border-white/15 bg-zinc-900/80 px-3 text-xs font-bold text-white transition hover:border-lime-300/40 hover:text-lime-200"
+                className="flex min-h-[44px] items-center gap-1.5 rounded-full border border-white/[0.12] bg-[#111713] px-3 text-xs font-bold text-[#F4F7F2] transition hover:border-[#BEF264]/40 hover:text-[#D9F99D]"
               >
-                <LogIn className="h-3.5 w-3.5 text-lime-300" />
+                <LogIn className="h-3.5 w-3.5 text-[#BEF264]" />
                 Entrar
               </button>
             ))}

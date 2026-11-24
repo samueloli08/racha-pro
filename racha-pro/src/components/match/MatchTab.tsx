@@ -5,6 +5,8 @@ import {
   Play,
   Plus,
   RotateCcw,
+  Shield,
+  Sun,
   Swords,
   Trash2,
   Volume2,
@@ -21,6 +23,7 @@ interface MatchTabProps {
   teams: Team[];
   players: Player[];
   durationSeconds: number;
+  matchNumber?: number;
   readOnly?: boolean;
   onToggleTimer: () => void;
   onResetTimer: () => void;
@@ -37,11 +40,41 @@ interface MatchTabProps {
   onGoToSort: () => void;
 }
 
+/** Retira prefixo "Time " apenas para nomes curtos de placar/botão quando fizer sentido. */
+function shortTeamLabel(name: string): string {
+  const cleaned = name.replace(/^Time\s+/i, '').trim();
+  return cleaned.length > 0 ? cleaned : name;
+}
+
+/** Gradiente e texto de alto contraste para o botão "+ Gol" de acordo com o colete. */
+function goalButtonStyle(hex: string): React.CSSProperties {
+  const normalized = hex.toLowerCase();
+  const map: Record<string, { bg: string; color: string }> = {
+    '#34d399': { bg: 'linear-gradient(135deg, #D9F99D, #A3E635)', color: '#11180B' },
+    '#10b981': { bg: 'linear-gradient(135deg, #D9F99D, #A3E635)', color: '#11180B' },
+    '#fbbf24': { bg: 'linear-gradient(135deg, #FDE68A, #FBBF24)', color: '#1A1405' },
+    '#f59e0b': { bg: 'linear-gradient(135deg, #FDE68A, #FBBF24)', color: '#1A1405' },
+    '#60a5fa': { bg: 'linear-gradient(135deg, #BFDBFE, #60A5FA)', color: '#0A1628' },
+    '#3b82f6': { bg: 'linear-gradient(135deg, #BFDBFE, #60A5FA)', color: '#0A1628' },
+    '#f87171': { bg: 'linear-gradient(135deg, #FECACA, #F87171)', color: '#260808' },
+    '#ef4444': { bg: 'linear-gradient(135deg, #FECACA, #F87171)', color: '#260808' },
+    '#c084fc': { bg: 'linear-gradient(135deg, #E9D5FF, #C084FC)', color: '#1C0A29' },
+    '#a855f7': { bg: 'linear-gradient(135deg, #E9D5FF, #C084FC)', color: '#1C0A29' },
+    '#e4e4e7': { bg: 'linear-gradient(135deg, #F8FAFC, #E4E4E7)', color: '#0B100D' },
+  };
+  const preset = map[normalized];
+  if (preset) {
+    return { background: preset.bg, color: preset.color };
+  }
+  return { background: hex, color: '#0B100D' };
+}
+
 export const MatchTab: React.FC<MatchTabProps> = ({
   activeMatch,
   teams,
   players,
   durationSeconds,
+  matchNumber = 1,
   readOnly = false,
   onToggleTimer,
   onResetTimer,
@@ -64,18 +97,20 @@ export const MatchTab: React.FC<MatchTabProps> = ({
 
   if (!teamA || !teamB) {
     return (
-      <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-8 text-center">
-        <p className="text-sm text-zinc-400">
+      <div className="rp-card rounded-[28px] p-8 text-center">
+        <p className="rp-eyebrow mb-2">QUADRA LIVRE</p>
+        <p className="text-sm font-medium text-[#879287]">
           {readOnly
             ? 'Nenhuma partida em andamento ainda.'
-            : 'Nenhum time sorteado ainda para iniciar a partida.'}
+            : 'Sorteie os times para começar o placar ao vivo.'}
         </p>
         {!readOnly && (
           <button
+            type="button"
             onClick={onGoToSort}
-            className="mt-4 min-h-[48px] rounded-xl bg-emerald-500 px-5 text-sm font-extrabold text-zinc-950"
+            className="rp-btn-primary mt-5 min-h-[48px] rounded-2xl px-6 text-sm"
           >
-            Ir para Sorteio
+            Ir para Times
           </button>
         )}
       </div>
@@ -90,14 +125,22 @@ export const MatchTab: React.FC<MatchTabProps> = ({
   const isLastMinute =
     activeMatch.isRunning && activeMatch.secondsRemaining <= 60 && activeMatch.secondsRemaining > 0;
 
+  const shortA = shortTeamLabel(teamA.name);
+  const shortB = shortTeamLabel(teamB.name);
+
   const goalkeeperName = (team: Team): string | null => {
     const gk = players.find((p) => p.isGoalkeeper && team.playerIds.includes(p.id));
     return gk ? gk.name : null;
   };
 
+  const gkA = goalkeeperName(teamA);
+  const gkB = goalkeeperName(teamB);
+
   const handleChangeMatchup = (aId: string, bId: string) => {
     if (activeMatch.events.length > 0) {
-      const ok = window.confirm('Trocar o confronto vai zerar o placar e os gols desta partida. Continuar?');
+      const ok = window.confirm(
+        'Trocar o confronto vai zerar o placar e os gols desta partida. Continuar?'
+      );
       if (!ok) return;
     }
     onSetMatchup(aId, bId);
@@ -105,202 +148,268 @@ export const MatchTab: React.FC<MatchTabProps> = ({
     toast.show('Confronto atualizado');
   };
 
+  const statusTag = isTimeOver
+    ? 'TEMPO ENCERRADO'
+    : activeMatch.isRunning
+    ? 'EM ANDAMENTO'
+    : 'PRONTA PRA ROLAR';
+
   return (
-    <div className="space-y-5">
-      {readOnly ? (
-        <div className="rounded-3xl border border-zinc-800 bg-zinc-900 p-4 text-center">
-          <p className="font-mono text-[11px] font-bold uppercase tracking-widest text-lime-300">
-            Placar ao vivo • Somente leitura
+    <div className="space-y-4">
+      {/* Cabeçalho da Partida */}
+      <div className="flex items-end justify-between gap-3">
+        <div className="min-w-0">
+          <p className="rp-eyebrow mb-1.5">
+            PARTIDA {matchNumber} · {statusTag}
+            {readOnly ? ' · LEITURA' : ''}
           </p>
-          <p className="mt-1 text-xs text-zinc-400">
-            Atualiza automaticamente conforme o organizador registra os gols.
-          </p>
+          <h2 className="truncate text-[28px] font-extrabold leading-[1.08] tracking-[-0.065em] text-[#F7FAEF] sm:text-[32px]">
+            {shortA} <span className="text-[#4B554C]">x</span> {shortB}
+          </h2>
         </div>
-      ) : (
-        <div
-          className={`rounded-3xl border p-5 text-center transition ${
-            isTimeOver
-              ? 'animate-pulse border-amber-500 bg-amber-500/15'
-              : isLastMinute
-              ? 'border-amber-500/60 bg-zinc-900'
-              : 'border-zinc-800 bg-zinc-900'
-          }`}
-        >
-          <div className="mb-2 flex items-center justify-between">
-            <div className="flex gap-1">
-              {[5, 7, 8, 10].map((m) => (
-                <button
-                  key={m}
-                  onClick={() => onChangeDuration(m)}
-                  className={`min-h-[44px] min-w-[44px] rounded-xl px-2 text-xs font-bold ${
-                    durationSeconds === m * 60
-                      ? 'bg-emerald-500 text-zinc-950'
-                      : 'bg-zinc-950 text-zinc-400'
-                  }`}
-                >
-                  {m}m
-                </button>
-              ))}
+
+        {!readOnly && teams.length >= 2 && (
+          <button
+            type="button"
+            onClick={() => setShowMatchup(true)}
+            className="rp-btn-secondary flex min-h-[44px] shrink-0 items-center gap-1.5 rounded-2xl px-3 text-xs"
+            title="Trocar confronto"
+          >
+            <Swords className="h-3.5 w-3.5 text-[#BEF264]" />
+            <span>Trocar</span>
+          </button>
+        )}
+      </div>
+
+      {/* Placar Principal */}
+      <div
+        className={`rp-card rounded-[28px] px-4 pb-5 pt-4 text-center transition sm:px-6 ${
+          isTimeOver
+            ? 'animate-pulse border-[#FBBF24]/70'
+            : isLastMinute
+            ? 'border-[#FBBF24]/45'
+            : ''
+        }`}
+      >
+        {!readOnly && (
+          <div className="mb-3 flex items-center justify-between gap-2">
+            <div className="flex items-center gap-1">
+              {[5, 7, 8, 10].map((m) => {
+                const active = durationSeconds === m * 60;
+                return (
+                  <button
+                    key={m}
+                    type="button"
+                    onClick={() => onChangeDuration(m)}
+                    className={`min-h-[38px] min-w-[40px] rounded-xl px-2 font-mono text-[11px] font-extrabold transition ${
+                      active
+                        ? 'border border-[#BEF264]/40 bg-[#84CC16]/15 text-[#D9F99D]'
+                        : 'border border-white/[0.06] bg-[#0B100D] text-[#879287] hover:text-[#C9D3C4]'
+                    }`}
+                  >
+                    {m}m
+                  </button>
+                );
+              })}
             </div>
 
             <button
+              type="button"
               onClick={() => {
                 unlockAudio();
                 playRefWhistle();
               }}
-              className="flex min-h-[44px] items-center gap-1 rounded-xl bg-zinc-800 px-3 text-xs font-semibold text-zinc-300"
-              title="Testar Apito"
+              className="flex min-h-[38px] items-center gap-1.5 rounded-xl border border-white/[0.085] bg-[#0B100D] px-3 font-mono text-[11px] font-bold uppercase tracking-[0.04em] text-[#C9D3C4] hover:border-[#BEF264]/35 hover:text-[#D9F99D]"
+              title="Testar apito"
             >
-              <Volume2 className="h-4 w-4 text-emerald-400" /> Apito
+              <Volume2 className="h-3.5 w-3.5 text-[#BEF264]" />
+              Apito
             </button>
           </div>
+        )}
 
+        {readOnly ? (
+          <p className="mb-2 font-mono text-[11px] font-bold uppercase tracking-[0.12em] text-[#879287]">
+            Atualiza automaticamente a cada gol
+          </p>
+        ) : (
           <div
-            className={`my-2 font-mono text-6xl font-black tracking-tight tabular-nums ${
-              isLastMinute ? 'text-amber-300' : 'text-white'
+            className={`font-mono text-[56px] font-extrabold leading-none tracking-[-0.02em] tabular-nums sm:text-[64px] ${
+              isTimeOver || isLastMinute ? 'text-[#FBBF24]' : 'text-[#BEF264]'
             }`}
           >
             {mins}:{secs}
           </div>
-          {activeMatch.isRunning && (
-            <p className="text-[11px] font-medium text-zinc-500">
-              🔆 Tela mantida acesa durante o jogo
-            </p>
-          )}
+        )}
 
-          <div className="mt-4 grid grid-cols-3 gap-2">
+        <div className="mt-4 grid w-full grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2">
+          {[
+            { team: teamA, label: shortA, score: activeMatch.scoreA, gk: gkA },
+            { team: teamB, label: shortB, score: activeMatch.scoreB, gk: gkB },
+          ].map((side, idx) => (
+            <React.Fragment key={side.team.id}>
+              {idx === 1 && (
+                <span className="font-mono text-[28px] font-bold text-[#4B554C]">×</span>
+              )}
+              <div className="flex min-w-0 flex-col items-center gap-1.5">
+                <span className="flex max-w-full items-center gap-2 text-[13px] font-extrabold text-[#C9D3C4]">
+                  <i
+                    className="block h-2.5 w-2.5 shrink-0 rounded-full"
+                    style={{ backgroundColor: side.team.color }}
+                  />
+                  <span className="truncate">{side.label}</span>
+                </span>
+                <span className="font-mono text-[76px] font-extrabold leading-none tracking-[-0.03em] text-[#F4F7F2] tabular-nums sm:text-[84px]">
+                  {side.score}
+                </span>
+                <span className="inline-flex max-w-full items-center gap-1 truncate font-mono text-[10px] font-bold text-[#879287]">
+                  <Shield className="h-3 w-3 shrink-0 text-[#FBBF24]/80" />
+                  <span className="truncate">{side.gk ? side.gk : 'sem goleiro'}</span>
+                </span>
+              </div>
+            </React.Fragment>
+          ))}
+        </div>
+
+        {activeMatch.isRunning && !readOnly && (
+          <p className="mt-4 inline-flex items-center gap-1.5 font-mono text-[10px] font-bold uppercase tracking-[0.08em] text-[#879287]">
+            <Sun className="h-3 w-3 text-[#BEF264]" />
+            Tela mantida acesa
+          </p>
+        )}
+      </div>
+
+      {/* Ações Principais */}
+      {!readOnly && (
+        <div className="space-y-2.5">
+          <div className="grid grid-cols-2 gap-2.5">
+            {[
+              { team: teamA, label: shortA },
+              { team: teamB, label: shortB },
+            ].map(({ team, label }) => (
+              <button
+                key={team.id}
+                type="button"
+                onClick={() => setGoalModalTeam(team)}
+                style={goalButtonStyle(team.color)}
+                className="flex min-h-[56px] items-center justify-center gap-1.5 rounded-[18px] px-3 text-[15px] font-extrabold tracking-[-0.02em] shadow-lg shadow-black/25 transition hover:brightness-105"
+              >
+                <Plus className="h-4 w-4 shrink-0 stroke-[3]" />
+                <span className="truncate">Gol {label}</span>
+              </button>
+            ))}
+          </div>
+
+          <div className="grid grid-cols-[minmax(0,1fr)_auto_auto] gap-2">
             <button
+              type="button"
               onClick={onToggleTimer}
-              className={`col-span-2 flex min-h-[56px] items-center justify-center gap-2 rounded-2xl text-base font-extrabold transition active:scale-95 ${
-                activeMatch.isRunning ? 'bg-amber-500 text-zinc-950' : 'bg-emerald-500 text-zinc-950'
+              className={`flex min-h-[48px] items-center justify-center gap-2 rounded-[16px] px-4 text-sm font-bold transition ${
+                activeMatch.isRunning
+                  ? 'rp-btn-secondary'
+                  : 'border border-[#BEF264]/35 bg-[#84CC16]/12 text-[#D9F99D] hover:bg-[#84CC16]/20'
               }`}
             >
               {activeMatch.isRunning ? (
                 <>
-                  <Pause className="h-5 w-5 fill-current" /> Pausar
+                  <Pause className="h-4 w-4 fill-current" />
+                  Pausar cronômetro
                 </>
               ) : (
                 <>
-                  <Play className="h-5 w-5 fill-current" /> Iniciar
+                  <Play className="h-4 w-4 fill-current" />
+                  Iniciar cronômetro
                 </>
               )}
             </button>
 
-            <div className="grid grid-cols-2 gap-1.5">
-              <button
-                onClick={onAddOneMinute}
-                className="flex min-h-[44px] items-center justify-center rounded-2xl border border-zinc-700 bg-zinc-950 text-xs font-extrabold text-zinc-200 active:scale-95"
-              >
-                +1m
-              </button>
-              <button
-                onClick={onResetTimer}
-                className="flex min-h-[44px] items-center justify-center rounded-2xl border border-zinc-700 bg-zinc-950 text-zinc-400 active:scale-95"
-                aria-label="Resetar tempo"
-              >
-                <RotateCcw className="h-4 w-4" />
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={onAddOneMinute}
+              className="rp-btn-secondary flex min-h-[48px] items-center justify-center rounded-[16px] px-3.5 font-mono text-xs font-extrabold"
+              title="Adicionar 1 minuto"
+            >
+              +1m
+            </button>
+
+            <button
+              type="button"
+              onClick={onResetTimer}
+              className="rp-btn-secondary flex h-[48px] w-[48px] items-center justify-center rounded-[16px] text-[#879287] hover:text-[#F4F7F2]"
+              aria-label="Resetar cronômetro"
+              title="Resetar cronômetro"
+            >
+              <RotateCcw className="h-4 w-4" />
+            </button>
           </div>
         </div>
       )}
 
-      {!readOnly && (
-        <button
-          onClick={() => setShowMatchup(true)}
-          disabled={teams.length < 2}
-          className="flex min-h-[44px] w-full items-center justify-center gap-2 rounded-2xl border border-zinc-800 bg-zinc-900 text-xs font-bold text-zinc-300 transition hover:border-emerald-500 active:scale-95"
-        >
-          <Swords className="h-4 w-4 text-emerald-400" />
-          Trocar confronto
-        </button>
-      )}
-
-      <div className="grid grid-cols-2 gap-3">
-        {[
-          { team: teamA, score: activeMatch.scoreA },
-          { team: teamB, score: activeMatch.scoreB },
-        ].map(({ team, score }) => {
-          const gk = goalkeeperName(team);
-          return (
-            <div
-              key={team.id}
-              className="flex min-w-0 flex-col items-center rounded-3xl border border-zinc-800 bg-zinc-900 p-4"
-            >
-              <span
-                className="max-w-full truncate text-xs font-extrabold uppercase tracking-wider"
-                style={{ color: team.color }}
-              >
-                {team.name}
-              </span>
-              <span className="max-w-full truncate text-[11px] text-zinc-500">
-                {gk ? `🧤 ${gk}` : 'sem goleiro'}
-              </span>
-              <span className="my-2 font-mono text-5xl font-black text-white tabular-nums">
-                {score}
-              </span>
-              {!readOnly && (
-                <button
-                  onClick={() => setGoalModalTeam(team)}
-                  className="mt-1 flex min-h-[48px] w-full items-center justify-center gap-1 rounded-xl bg-zinc-800 text-sm font-extrabold text-white transition hover:bg-emerald-500 hover:text-zinc-950 active:scale-95"
-                >
-                  <Plus className="h-4 w-4 stroke-[3]" /> GOL
-                </button>
-              )}
-            </div>
-          );
-        })}
-      </div>
-
+      {/* Lances da Partida */}
       {activeMatch.events.length > 0 && (
-        <div className="space-y-2 rounded-2xl border border-zinc-800 bg-zinc-900/70 p-4">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-400">
-            Gols da Partida
+        <div className="space-y-2 pt-1">
+          <h3 className="font-mono text-[11px] font-extrabold uppercase tracking-[0.14em] text-[#879287]">
+            Lances
           </h3>
-          {activeMatch.events.map((ev) => {
-            const evTeam = teams.find((t) => t.id === ev.teamId);
-            const scorerName =
-              ev.scorerId === 'own_goal' ? 'Gol Contra' : playerMap.get(ev.scorerId) || 'Jogador';
-            const assistName = ev.assistId ? playerMap.get(ev.assistId) : null;
+          <div className="space-y-2">
+            {activeMatch.events.map((ev) => {
+              const evTeam = teams.find((t) => t.id === ev.teamId);
+              const isOwnGoal = ev.scorerId === 'own_goal';
+              const scorerName = isOwnGoal ? 'Gol contra' : playerMap.get(ev.scorerId) || 'Jogador';
+              const assistName = ev.assistId ? playerMap.get(ev.assistId) : null;
 
-            return (
-              <div
-                key={ev.id}
-                className="flex items-center justify-between gap-2 rounded-xl bg-zinc-950 px-3 text-xs"
-              >
-                <div className="min-w-0 py-2">
-                  <span className="font-mono font-bold text-emerald-400">{ev.minuteFormatted}</span>{' '}
-                  <span className="font-bold text-white">⚽ {scorerName}</span>
-                  {assistName && <span className="text-zinc-400"> (Assist: {assistName})</span>}
-                  <span className="ml-2 text-[11px] font-bold" style={{ color: evTeam?.color }}>
-                    [{evTeam?.name}]
-                  </span>
+              return (
+                <div
+                  key={ev.id}
+                  className="rp-surface flex items-center justify-between gap-2 rounded-[16px] px-3.5 py-2.5"
+                >
+                  <div className="min-w-0 text-[13px] font-bold leading-snug text-[#F4F7F2]">
+                    <span style={{ color: evTeam?.color ?? '#BEF264' }}>
+                      {isOwnGoal ? 'Contra' : 'Gol'}
+                    </span>
+                    <span className="mx-1.5 text-[#4B554C]">·</span>
+                    <span>{scorerName}</span>
+                    {assistName && (
+                      <span className="ml-1.5 font-medium text-[#879287]">
+                        assist. {assistName}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="flex shrink-0 items-center gap-1">
+                    <span className="font-mono text-xs font-bold text-[#879287] tabular-nums">
+                      {ev.minuteFormatted}
+                    </span>
+                    {!readOnly && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onRemoveEvent(ev.id);
+                          toast.show('Gol removido', 'info');
+                        }}
+                        className="flex h-10 w-10 items-center justify-center rounded-xl text-[#879287] hover:bg-white/[0.04] hover:text-[#F87171]"
+                        aria-label="Remover gol"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    )}
+                  </div>
                 </div>
-                {!readOnly && (
-                  <button
-                    onClick={() => {
-                      onRemoveEvent(ev.id);
-                      toast.show('Gol removido', 'info');
-                    }}
-                    className="flex h-11 w-11 shrink-0 items-center justify-center text-zinc-500 hover:text-red-400"
-                    aria-label="Remover gol"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                )}
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
       )}
 
+      {/* Encerrar Partida */}
       {!readOnly && (
         <button
+          type="button"
           onClick={() => setShowEndModal(true)}
-          className="flex min-h-[52px] w-full items-center justify-center gap-2 rounded-2xl border border-zinc-700 bg-zinc-900 text-sm font-extrabold text-white transition hover:border-emerald-500"
+          className="rp-btn-secondary flex min-h-[52px] w-full items-center justify-center gap-2 rounded-[18px] text-sm font-extrabold"
         >
-          <Flag className="h-4 w-4 text-emerald-400" />
-          Encerrar Partida e Rotacionar Fila
+          <Flag className="h-4 w-4 text-[#BEF264]" />
+          Encerrar partida e girar fila
         </button>
       )}
 

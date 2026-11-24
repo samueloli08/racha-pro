@@ -1,5 +1,17 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
-  <rect width="64" height="64" rx="16" fill="#10b981"/>
-  <circle cx="32" cy="32" r="18" stroke="#09090b" stroke-width="4"/>
-  <polygon points="32,21 39,27 36,36 28,36 25,27" fill="#09090b"/>
+  <defs>
+    <linearGradient id="rp-lime" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#D9F99D" />
+      <stop offset="100%" stop-color="#84CC16" />
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="18" fill="url(#rp-lime)" />
+  <path
+    d="M21 50V14h11a12 12 0 0 1 0 24H21M31 38l12 12"
+    stroke="#10160A"
+    stroke-width="7"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+  <circle cx="32" cy="26" r="3.6" fill="#10160A" />
 </svg>
