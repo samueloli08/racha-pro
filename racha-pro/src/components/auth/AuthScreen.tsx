@@ -83,8 +83,9 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
       return;
     }
 
-    if (password.length < 6) {
-      setError('A senha precisa ter pelo menos 6 caracteres.');
+    const minLen = mode === 'signup' ? 8 : 6;
+    if (password.length < minLen) {
+      setError(`A senha precisa ter pelo menos ${minLen} caracteres.`);
       return;
     }
 
@@ -105,7 +106,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
 
     if (mode === 'signup' && res.needsEmailConfirmation) {
       setNotice(
-        'Conta criada! Verifique seu e-mail para confirmar o cadastro e depois faça login.'
+        'Se este e-mail ainda não estiver cadastrado, enviamos as instruções para confirmar sua conta. Caso já tenha conta, tente entrar.'
       );
       setMode('login');
       setPassword('');
@@ -234,9 +235,9 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
-                        placeholder="Mínimo 6 caracteres"
+                        placeholder={mode === 'signup' ? 'Mínimo 8 caracteres' : 'Sua senha'}
                         required
-                        minLength={6}
+                        minLength={mode === 'signup' ? 8 : 6}
                         className="min-h-[46px] w-full rounded-xl border border-white/10 bg-zinc-950/80 pl-10 pr-12 text-base text-white placeholder-zinc-500 focus:border-lime-300/70 focus:outline-none"
                       />
                       <button
@@ -265,7 +266,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
                         autoComplete="new-password"
                         placeholder="Repita sua senha"
                         required
-                        minLength={6}
+                        minLength={8}
                         className="min-h-[46px] w-full rounded-xl border border-white/10 bg-zinc-950/80 pl-10 pr-3.5 text-base text-white placeholder-zinc-500 focus:border-lime-300/70 focus:outline-none"
                       />
                     </div>

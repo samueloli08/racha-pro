@@ -94,11 +94,13 @@ export interface RachaStoreState {
 
 export interface RachaRecord {
   id: string;
-  owner_id: string;
+  owner_id?: string;
   name: string;
   share_code: string;
   is_public: boolean;
   data: unknown;
   created_at: string;
   updated_at: string;
+  /** Retornado pela RPC segura de compartilhamento sem expor o owner_id. */
+  is_owner?: boolean;
 }

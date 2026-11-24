@@ -3,9 +3,10 @@ import { supabase } from '../lib/supabase';
 import { RachaRecord, RachaStoreState } from '../types/racha';
 
 const SHARE_ALPHABET = 'abcdefghjkmnpqrstuvwxyz23456789';
+const SHARE_CODE_REGEX = /^[a-z0-9]{6,32}$/;
 const LEGACY_STORAGE_KEY = 'rachapro_state_v1';
 
-function generateShareCode(length = 8): string {
+function generateShareCode(length = 12): string {
   const bytes = new Uint8Array(length);
   crypto.getRandomValues(bytes);
   let out = '';
@@ -13,6 +14,40 @@ function generateShareCode(length = 8): string {
     out += SHARE_ALPHABET[bytes[i] % SHARE_ALPHABET.length];
   }
   return out;
+}
+
+function sanitizeDbError(err: unknown, fallback: string): string {
+  if (import.meta.env.DEV) {
+    console.warn('[rachas] erro:', err);
+  }
+  const obj = (typeof err === 'object' && err !== null ? err : {}) as {
+    code?: string;
+    message?: string;
+    status?: number;
+  };
+  const code = obj.code ?? '';
+  const msg = (obj.message ?? '').toLowerCase();
+
+  if (code === 'PGRST301' || obj.status === 401 || msg.includes('jwt')) {
+    return 'Sua sessão expirou. Faça login novamente.';
+  }
+  if (code === '42501' || obj.status === 403) {
+    return 'Você não tem permissão para realizar esta ação.';
+  }
+  if (code === '23514') {
+    return 'Os dados informados excedem o limite permitido.';
+  }
+  if (code === '42883' || code === 'PGRST202' || code === '42P01') {
+    return 'Banco de dados desatualizado. Execute o script supabase/auth_rachas.sql no Supabase.';
+  }
+  if (msg.includes('failed to fetch') || msg.includes('network')) {
+    return 'Sem conexão com o servidor. Verifique sua internet.';
+  }
+  return fallback;
+}
+
+export function isValidShareCode(code: string): boolean {
+  return SHARE_CODE_REGEX.test(code.trim().toLowerCase());
 }
 
 export function buildShareUrl(shareCode: string): string {
@@ -102,8 +137,7 @@ export function useOwnedRachas(userId: string | null) {
         return list[0]?.id ?? null;
       });
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Erro ao carregar seus rachas.';
-      setError(message);
+      setError(sanitizeDbError(err, 'Não foi possível carregar seus rachas.'));
     } finally {
       setLoading(false);
     }
@@ -137,7 +171,7 @@ export function useOwnedRachas(userId: string | null) {
       if (!trimmed) return { racha: null, error: 'Dê um nome para o racha.' };
 
       for (let attempt = 0; attempt < 3; attempt++) {
-        const shareCode = generateShareCode(8);
+        const shareCode = generateShareCode(12);
         const { data, error: insertError } = await supabase
           .from('rachas')
           .insert({
@@ -157,11 +191,10 @@ export function useOwnedRachas(userId: string | null) {
           return { racha: created, error: null };
         }
 
-        // 23505 = unique violation no share_code: tenta gerar outro código
         if (insertError?.code === '23505') continue;
         return {
           racha: null,
-          error: insertError?.message || 'Não foi possível criar o racha.',
+          error: sanitizeDbError(insertError, 'Não foi possível criar o racha.'),
         };
       }
 
@@ -182,9 +215,62 @@ export function useOwnedRachas(userId: string | null) {
         .eq('id', id)
         .eq('owner_id', userId);
 
-      if (updateError) return { error: updateError.message };
+      if (updateError) {
+        return { error: sanitizeDbError(updateError, 'Não foi possível renomear o racha.') };
+      }
       setRachas((prev) => prev.map((r) => (r.id === id ? { ...r, name: trimmed } : r)));
       return { error: null };
+    },
+    [userId]
+  );
+
+  const setRachaPublic = useCallback(
+    async (id: string, isPublic: boolean): Promise<{ error: string | null }> => {
+      if (!supabase || !userId) return { error: 'Sessão inválida.' };
+
+      const { error: updateError } = await supabase
+        .from('rachas')
+        .update({ is_public: isPublic })
+        .eq('id', id)
+        .eq('owner_id', userId);
+
+      if (updateError) {
+        return {
+          error: sanitizeDbError(updateError, 'Não foi possível alterar a privacidade do link.'),
+        };
+      }
+      setRachas((prev) => prev.map((r) => (r.id === id ? { ...r, is_public: isPublic } : r)));
+      return { error: null };
+    },
+    [userId]
+  );
+
+  const regenerateShareCode = useCallback(
+    async (id: string): Promise<{ shareCode: string | null; error: string | null }> => {
+      if (!supabase || !userId) return { shareCode: null, error: 'Sessão inválida.' };
+
+      for (let attempt = 0; attempt < 3; attempt++) {
+        const nextCode = generateShareCode(12);
+        const { error: updateError } = await supabase
+          .from('rachas')
+          .update({ share_code: nextCode })
+          .eq('id', id)
+          .eq('owner_id', userId);
+
+        if (!updateError) {
+          setRachas((prev) =>
+            prev.map((r) => (r.id === id ? { ...r, share_code: nextCode } : r))
+          );
+          return { shareCode: nextCode, error: null };
+        }
+        if (updateError.code === '23505') continue;
+        return {
+          shareCode: null,
+          error: sanitizeDbError(updateError, 'Não foi possível gerar um novo link.'),
+        };
+      }
+
+      return { shareCode: null, error: 'Não foi possível gerar um novo link. Tente novamente.' };
     },
     [userId]
   );
@@ -198,7 +284,9 @@ export function useOwnedRachas(userId: string | null) {
         .eq('id', id)
         .eq('owner_id', userId);
 
-      if (deleteError) return { error: deleteError.message };
+      if (deleteError) {
+        return { error: sanitizeDbError(deleteError, 'Não foi possível excluir o racha.') };
+      }
 
       setRachas((prev) => {
         const remaining = prev.filter((r) => r.id !== id);
@@ -236,11 +324,13 @@ export function useOwnedRachas(userId: string | null) {
     selectRacha,
     createRacha,
     renameRacha,
+    setRachaPublic,
+    regenerateShareCode,
     deleteRacha,
   };
 }
 
-export function useSharedRacha(shareCode: string | null) {
+export function useSharedRacha(shareCode: string | null, sessionKey: string | null = null) {
   const [racha, setRacha] = useState<RachaRecord | null>(null);
   const [loading, setLoading] = useState<boolean>(Boolean(shareCode));
   const [notFound, setNotFound] = useState(false);
@@ -254,9 +344,18 @@ export function useSharedRacha(shareCode: string | null) {
       setError(null);
       return;
     }
+
+    if (!isValidShareCode(shareCode)) {
+      setRacha(null);
+      setLoading(false);
+      setNotFound(true);
+      setError(null);
+      return;
+    }
+
     if (!supabase) {
       setLoading(false);
-      setError('Supabase não configurado.');
+      setError('Serviço de nuvem não configurado.');
       return;
     }
 
@@ -264,25 +363,24 @@ export function useSharedRacha(shareCode: string | null) {
     setNotFound(false);
     setError(null);
     try {
-      const { data, error: queryError } = await supabase
-        .from('rachas')
-        .select('id, owner_id, name, share_code, is_public, data, created_at, updated_at')
-        .eq('share_code', shareCode)
-        .maybeSingle();
+      const { data, error: rpcError } = await supabase.rpc('get_racha_by_share_code', {
+        p_share_code: shareCode.trim().toLowerCase(),
+      });
 
-      if (queryError) throw queryError;
-      if (!data) {
+      if (rpcError) throw rpcError;
+      const row = Array.isArray(data) ? data[0] : data;
+      if (!row) {
         setRacha(null);
         setNotFound(true);
       } else {
-        setRacha(data as RachaRecord);
+        setRacha(row as RachaRecord);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro ao carregar o racha.');
+      setError(sanitizeDbError(err, 'Não foi possível carregar este racha agora.'));
     } finally {
       setLoading(false);
     }
-  }, [shareCode]);
+  }, [shareCode, sessionKey]);
 
   useEffect(() => {
     void load();
