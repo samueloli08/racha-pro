@@ -9,11 +9,8 @@ export interface AuthActionResult {
 
 function translateAuthError(message: string): string {
   const lower = message.toLowerCase();
-  if (lower.includes('invalid login credentials')) {
-    return 'E-mail ou senha incorretos.';
-  }
-  if (lower.includes('email not confirmed')) {
-    return 'Confirme seu e-mail antes de entrar. Verifique sua caixa de entrada ou spam.';
+  if (lower.includes('invalid login credentials') || lower.includes('email not confirmed')) {
+    return 'E-mail ou senha incorretos, ou conta ainda aguardando confirmação por e-mail.';
   }
   if (lower.includes('password should be at least') || lower.includes('weak password')) {
     return 'Escolha uma senha mais forte (mínimo de 8 caracteres).';
@@ -36,14 +33,16 @@ function translateAuthError(message: string): string {
   return 'Não foi possível concluir a autenticação. Tente novamente.';
 }
 
-function clearLocalRachaCaches(): void {
+/** Limpa todos os caches locais do RachaPro (evita vazamento entre contas em dispositivo compartilhado). */
+export function clearLocalRachaCaches(): void {
   try {
     const toRemove: string[] = [];
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
       if (
         key &&
-        (key.startsWith('rachapro_racha_') ||
+        (key === 'rachapro_state_v1' ||
+          key.startsWith('rachapro_racha_') ||
           key.startsWith('rachapro_dirty_') ||
           key.startsWith('rachapro_last_racha_'))
       ) {
@@ -51,6 +50,28 @@ function clearLocalRachaCaches(): void {
       }
     }
     toRemove.forEach((key) => localStorage.removeItem(key));
+  } catch {
+    // ignora
+  }
+}
+
+function scrubAuthUrlTokens(): void {
+  try {
+    const url = new URL(window.location.href);
+    let changed = false;
+    if (url.hash && (url.hash.includes('access_token') || url.hash.includes('type=recovery'))) {
+      url.hash = '';
+      changed = true;
+    }
+    if (url.searchParams.has('code') || url.searchParams.has('token_hash')) {
+      url.searchParams.delete('code');
+      url.searchParams.delete('token_hash');
+      url.searchParams.delete('type');
+      changed = true;
+    }
+    if (changed) {
+      window.history.replaceState({}, '', `${url.pathname}${url.search}`);
+    }
   } catch {
     // ignora
   }
@@ -85,9 +106,11 @@ export function useAuth() {
       if (!active) return;
       setUser(session?.user ?? null);
       if (event === 'PASSWORD_RECOVERY') {
+        scrubAuthUrlTokens();
         setIsPasswordRecovery(true);
       } else if (event === 'SIGNED_OUT') {
         setIsPasswordRecovery(false);
+        clearLocalRachaCaches();
       }
       setLoading(false);
     });
@@ -110,21 +133,21 @@ export function useAuth() {
 
   const signUp = useCallback(async (email: string, password: string): Promise<AuthActionResult> => {
     if (!supabase) return { error: 'Serviço de autenticação não configurado.' };
+    const emailRedirectTo = `${window.location.origin}/`;
     const { data, error } = await supabase.auth.signUp({
       email: email.trim(),
       password,
+      options: { emailRedirectTo },
     });
 
     if (error) {
       const lower = error.message.toLowerCase();
-      // Evita enumeração de contas: não revela explicitamente se o e-mail já existe
       if (lower.includes('already registered') || lower.includes('already been registered')) {
         return { error: null, needsEmailConfirmation: true };
       }
       return { error: translateAuthError(error.message) };
     }
 
-    // Quando confirmação de e-mail está ativa e o e-mail já existe, Supabase retorna identities vazio
     const alreadyExistsObfuscated =
       Boolean(data.user) &&
       Array.isArray(data.user?.identities) &&
@@ -136,7 +159,7 @@ export function useAuth() {
 
   const resetPassword = useCallback(async (email: string): Promise<AuthActionResult> => {
     if (!supabase) return { error: 'Serviço de autenticação não configurado.' };
-    const redirectTo = `${window.location.origin}${window.location.pathname}`;
+    const redirectTo = `${window.location.origin}/`;
     const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), { redirectTo });
     if (error) return { error: translateAuthError(error.message) };
     return { error: null };
@@ -147,22 +170,23 @@ export function useAuth() {
     const { error } = await supabase.auth.updateUser({ password: newPassword });
     if (error) return { error: translateAuthError(error.message) };
     setIsPasswordRecovery(false);
-    // Limpa eventuais tokens no hash da URL após concluir a recuperação
-    if (window.location.hash) {
-      window.history.replaceState({}, '', `${window.location.pathname}${window.location.search}`);
-    }
+    scrubAuthUrlTokens();
     return { error: null };
   }, []);
 
-  const cancelPasswordRecovery = useCallback(() => {
-    setIsPasswordRecovery(false);
-  }, []);
-
   const signOut = useCallback(async (): Promise<void> => {
-    clearLocalRachaCaches();
     setIsPasswordRecovery(false);
-    if (!supabase) return;
-    await supabase.auth.signOut();
+    scrubAuthUrlTokens();
+    try {
+      if (supabase) {
+        await supabase.auth.signOut();
+      }
+    } finally {
+      setUser(null);
+      clearLocalRachaCaches();
+      // Garante limpeza também após desmontagem dos efeitos do workspace
+      window.setTimeout(clearLocalRachaCaches, 50);
+    }
   }, []);
 
   return {
@@ -174,7 +198,6 @@ export function useAuth() {
     signUp,
     resetPassword,
     updatePassword,
-    cancelPasswordRecovery,
     signOut,
   };
 }

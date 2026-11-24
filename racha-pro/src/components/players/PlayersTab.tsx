@@ -2,33 +2,63 @@ import React, { useMemo, useState } from 'react';
 import {
   Check,
   CheckCheck,
+  Mail,
   Pencil,
   Search,
   Shield,
   Sparkles,
   Star,
   Trash2,
+  UserCheck,
   UserPlus,
+  Users,
   X,
   XCircle,
 } from 'lucide-react';
-import { Player } from '../../types/racha';
+import {
+  Player,
+  RachaMember,
+  RachaRole,
+  RachaSession,
+  RsvpStatus,
+  SessionRsvp,
+  SessionStatus,
+} from '../../types/racha';
 import { useToast } from '../ui/Toast';
+import { SessionAttendanceCard } from './SessionAttendanceCard';
 
 type PlayerFilter = 'all' | 'present' | 'absent' | 'gk';
 
 interface PlayersTabProps {
   players: Player[];
+  role?: RachaRole;
   readOnly?: boolean;
+  members?: RachaMember[];
+  memberByPlayerId?: Map<string, RachaMember>;
+  playerEmails?: Record<string, string>;
+  sessionsAvailable?: boolean;
+  activeSession?: RachaSession | null;
+  sessionRsvps?: SessionRsvp[];
+  myRsvp?: SessionRsvp | null;
+  sessionSubmitting?: boolean;
   onAddPlayer: (name: string, isGoalkeeper: boolean, skill: number) => string | null;
   onTogglePresence: (id: string) => void;
   onSetAllPresence: (present: boolean) => void;
+  onApplyConfirmedToPresence?: (confirmedPlayerIds: string[]) => void;
   onUpdatePlayer: (
     id: string,
     patch: Partial<Pick<Player, 'name' | 'isGoalkeeper' | 'skill'>>
   ) => void;
+  onSetPlayerEmail?: (playerId: string, email: string) => Promise<{ error: string | null }>;
   onRemovePlayer: (id: string) => void;
   onLoadMockPlayers: () => void;
+  onOpenMembersModal?: () => void;
+  onCreateSession?: (title: string, scheduledAt?: string | null) => Promise<{ error: string | null }>;
+  onSetSessionStatus?: (
+    sessionId: string,
+    status: SessionStatus
+  ) => Promise<{ error: string | null }>;
+  onSetMyRsvp?: (status: RsvpStatus) => Promise<{ error: string | null }>;
 }
 
 const normalize = (text: string): string =>
@@ -62,19 +92,28 @@ const StarPicker: React.FC<{ value: number; onChange: (v: number) => void }> = (
 
 interface PlayerEditorProps {
   player: Player;
-  onSave: (patch: Pick<Player, 'name' | 'isGoalkeeper' | 'skill'>) => void;
+  initialEmail?: string;
+  canEditEmail: boolean;
+  onSave: (patch: Pick<Player, 'name' | 'isGoalkeeper' | 'skill'>, email?: string) => void;
   onCancel: () => void;
 }
 
-const PlayerEditor: React.FC<PlayerEditorProps> = ({ player, onSave, onCancel }) => {
+const PlayerEditor: React.FC<PlayerEditorProps> = ({
+  player,
+  initialEmail = '',
+  canEditEmail,
+  onSave,
+  onCancel,
+}) => {
   const [name, setName] = useState(player.name);
   const [isGoalkeeper, setIsGoalkeeper] = useState(player.isGoalkeeper);
   const [skill, setSkill] = useState(player.skill);
+  const [email, setEmail] = useState(initialEmail);
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
-    onSave({ name, isGoalkeeper, skill });
+    onSave({ name, isGoalkeeper, skill }, canEditEmail ? email : undefined);
   };
 
   return (
@@ -86,9 +125,23 @@ const PlayerEditor: React.FC<PlayerEditorProps> = ({ player, onSave, onCancel })
         type="text"
         value={name}
         onChange={(e) => setName(e.target.value)}
+        maxLength={60}
         autoFocus
         className="rp-input w-full rounded-xl px-3.5 text-base font-semibold"
       />
+      {canEditEmail && (
+        <div className="relative">
+          <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#879287]" />
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            maxLength={254}
+            placeholder="E-mail opcional (vínculo automático seguro)"
+            className="rp-input min-h-[42px] w-full rounded-xl pl-9 pr-3 text-xs"
+          />
+        </div>
+      )}
       <div className="flex flex-wrap items-center justify-between gap-2">
         <button
           type="button"
@@ -122,14 +175,31 @@ const PlayerEditor: React.FC<PlayerEditorProps> = ({ player, onSave, onCancel })
 
 export const PlayersTab: React.FC<PlayersTabProps> = ({
   players,
+  role,
   readOnly = false,
+  members = [],
+  memberByPlayerId,
+  playerEmails = {},
+  sessionsAvailable = false,
+  activeSession = null,
+  sessionRsvps = [],
+  myRsvp = null,
+  sessionSubmitting = false,
   onAddPlayer,
   onTogglePresence,
   onSetAllPresence,
+  onApplyConfirmedToPresence,
   onUpdatePlayer,
+  onSetPlayerEmail,
   onRemovePlayer,
   onLoadMockPlayers,
+  onOpenMembersModal,
+  onCreateSession,
+  onSetSessionStatus,
+  onSetMyRsvp,
 }) => {
+  const effectiveRole: RachaRole = role ?? (readOnly ? 'viewer' : 'admin');
+  const isAdmin = effectiveRole === 'admin';
   const toast = useToast();
   const [name, setName] = useState('');
   const [isGoalkeeper, setIsGoalkeeper] = useState(false);
@@ -141,8 +211,8 @@ export const PlayersTab: React.FC<PlayersTabProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
-    const added = name.trim();
-    onAddPlayer(name, isGoalkeeper, skill);
+    const added = name.trim().slice(0, 60);
+    onAddPlayer(added, isGoalkeeper, skill);
     toast.show(`${added} adicionado`);
     setName('');
     setIsGoalkeeper(false);
@@ -194,13 +264,35 @@ export const PlayersTab: React.FC<PlayersTabProps> = ({
 
   return (
     <div className="space-y-4">
-      {!readOnly && (
+      {/* Confirmação de presença para próxima sessão (admins e membros autenticados) */}
+      {effectiveRole !== 'viewer' &&
+        sessionsAvailable &&
+        onCreateSession &&
+        onSetSessionStatus &&
+        onSetMyRsvp && (
+          <SessionAttendanceCard
+            role={effectiveRole}
+            activeSession={activeSession}
+            rsvps={sessionRsvps}
+            myRsvp={myRsvp}
+            members={members}
+            players={players}
+            submitting={sessionSubmitting}
+            onCreateSession={onCreateSession}
+            onSetSessionStatus={onSetSessionStatus}
+            onSetMyRsvp={onSetMyRsvp}
+            onApplyConfirmedToPresence={isAdmin ? onApplyConfirmedToPresence : undefined}
+          />
+        )}
+
+      {isAdmin && (
         <form onSubmit={handleSubmit} className="rp-card space-y-3 rounded-[24px] p-4">
           <div className="flex gap-2">
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
+              maxLength={60}
               placeholder="Nome do jogador..."
               className="rp-input min-w-0 flex-1 rounded-2xl px-3.5 text-base"
             />
@@ -238,20 +330,33 @@ export const PlayersTab: React.FC<PlayersTabProps> = ({
         </form>
       )}
 
-      <div className="flex items-center justify-between gap-2 pt-1">
+      <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
         <h3 className="font-mono text-[11px] font-extrabold uppercase tracking-[0.14em] text-[#879287]">
-          Presença · <span className="text-[#BEF264]">{presentCount}</span>/{players.length}
+          Check-in na quadra · <span className="text-[#BEF264]">{presentCount}</span>/
+          {players.length}
         </h3>
-        {!readOnly && players.length === 0 && (
-          <button
-            type="button"
-            onClick={onLoadMockPlayers}
-            className="flex min-h-[42px] items-center gap-1.5 rounded-xl border border-[#BEF264]/30 bg-[#84CC16]/10 px-3 text-xs font-extrabold text-[#D9F99D] transition hover:bg-[#84CC16]/20"
-          >
-            <Sparkles className="h-3.5 w-3.5" />
-            Carregar 15 teste
-          </button>
-        )}
+        <div className="flex items-center gap-1.5">
+          {isAdmin && sessionsAvailable && onOpenMembersModal && (
+            <button
+              type="button"
+              onClick={onOpenMembersModal}
+              className="rp-btn-secondary flex min-h-[40px] items-center gap-1.5 rounded-xl px-3 text-xs"
+            >
+              <Users className="h-3.5 w-3.5 text-[#BEF264]" />
+              Vínculos ({members.length})
+            </button>
+          )}
+          {isAdmin && players.length === 0 && (
+            <button
+              type="button"
+              onClick={onLoadMockPlayers}
+              className="flex min-h-[40px] items-center gap-1.5 rounded-xl border border-[#BEF264]/30 bg-[#84CC16]/10 px-3 text-xs font-extrabold text-[#D9F99D] transition hover:bg-[#84CC16]/20"
+            >
+              <Sparkles className="h-3.5 w-3.5" />
+              Carregar 15 teste
+            </button>
+          )}
+        </div>
       </div>
 
       {players.length > 0 && (
@@ -262,6 +367,7 @@ export const PlayersTab: React.FC<PlayersTabProps> = ({
               type="search"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
+              maxLength={100}
               placeholder="Buscar jogador..."
               className="rp-input w-full rounded-2xl pl-10 pr-10 text-base"
             />
@@ -298,7 +404,7 @@ export const PlayersTab: React.FC<PlayersTabProps> = ({
             })}
           </div>
 
-          {!readOnly && (
+          {isAdmin && (
             <div className="grid grid-cols-2 gap-2">
               <button
                 type="button"
@@ -326,7 +432,7 @@ export const PlayersTab: React.FC<PlayersTabProps> = ({
       )}
 
       <div className="space-y-2">
-        {players.length === 0 && readOnly && (
+        {players.length === 0 && !isAdmin && (
           <p className="rp-surface rounded-[22px] py-8 text-center text-xs text-[#879287]">
             Nenhum jogador cadastrado neste racha ainda.
           </p>
@@ -339,14 +445,24 @@ export const PlayersTab: React.FC<PlayersTabProps> = ({
         )}
 
         {visible.map((player) => {
-          if (!readOnly && editingId === player.id) {
+          if (isAdmin && editingId === player.id) {
             return (
               <PlayerEditor
                 key={player.id}
                 player={player}
+                initialEmail={playerEmails[player.id] ?? ''}
+                canEditEmail={Boolean(sessionsAvailable && onSetPlayerEmail)}
                 onCancel={() => setEditingId(null)}
-                onSave={(patch) => {
+                onSave={(patch, nextEmail) => {
                   onUpdatePlayer(player.id, patch);
+                  if (nextEmail !== undefined && onSetPlayerEmail) {
+                    const prevEmail = playerEmails[player.id] ?? '';
+                    if (nextEmail.trim().toLowerCase() !== prevEmail) {
+                      void onSetPlayerEmail(player.id, nextEmail).then((res) => {
+                        if (res.error) toast.show(res.error, 'error');
+                      });
+                    }
+                  }
                   setEditingId(null);
                   toast.show('Jogador atualizado');
                 }}
@@ -355,6 +471,7 @@ export const PlayersTab: React.FC<PlayersTabProps> = ({
           }
 
           const rank = arrivalRank.get(player.id);
+          const linkedMember = memberByPlayerId?.get(player.id);
 
           const rowContent = (
             <>
@@ -369,11 +486,20 @@ export const PlayersTab: React.FC<PlayersTabProps> = ({
               </div>
 
               <div className="min-w-0">
-                <div className="flex items-center gap-1.5">
+                <div className="flex flex-wrap items-center gap-1.5">
                   <span className="truncate text-sm font-bold text-[#F4F7F2]">{player.name}</span>
                   {player.isGoalkeeper && (
                     <span className="shrink-0 rounded-md border border-[#FBBF24]/35 bg-[#FBBF24]/12 px-1.5 py-0.5 font-mono text-[10px] font-extrabold text-[#FDE68A]">
                       GOL
+                    </span>
+                  )}
+                  {linkedMember && (
+                    <span
+                      title="Vinculado a uma conta autenticada"
+                      className="inline-flex shrink-0 items-center gap-0.5 rounded-md border border-[#60A5FA]/30 bg-[#60A5FA]/10 px-1.5 py-0.5 font-mono text-[9px] font-extrabold uppercase text-[#93C5FD]"
+                    >
+                      <UserCheck className="h-2.5 w-2.5" />
+                      Conta
                     </span>
                   )}
                   {rank !== undefined && (
@@ -400,7 +526,7 @@ export const PlayersTab: React.FC<PlayersTabProps> = ({
                   : 'border-white/[0.06] bg-[#0B100D]/75 opacity-60'
               }`}
             >
-              {readOnly ? (
+              {!isAdmin ? (
                 <div className="flex min-h-[58px] min-w-0 flex-1 items-center gap-3 text-left">
                   {rowContent}
                 </div>
@@ -414,7 +540,7 @@ export const PlayersTab: React.FC<PlayersTabProps> = ({
                 </button>
               )}
 
-              {!readOnly && (
+              {isAdmin && (
                 <div className="flex shrink-0 items-center">
                   <button
                     type="button"

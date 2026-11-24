@@ -46,9 +46,15 @@ function shortTeamLabel(name: string): string {
   return cleaned.length > 0 ? cleaned : name;
 }
 
+const SAFE_HEX_RE = /^#[0-9a-f]{6}$/i;
+
+function safeHexColor(hex: string): string {
+  return SAFE_HEX_RE.test(hex) ? hex : '#34d399';
+}
+
 /** Gradiente e texto de alto contraste para o botão "+ Gol" de acordo com o colete. */
 function goalButtonStyle(hex: string): React.CSSProperties {
-  const normalized = hex.toLowerCase();
+  const normalized = safeHexColor(hex).toLowerCase();
   const map: Record<string, { bg: string; color: string }> = {
     '#34d399': { bg: 'linear-gradient(135deg, #D9F99D, #A3E635)', color: '#11180B' },
     '#10b981': { bg: 'linear-gradient(135deg, #D9F99D, #A3E635)', color: '#11180B' },
@@ -64,9 +70,9 @@ function goalButtonStyle(hex: string): React.CSSProperties {
   };
   const preset = map[normalized];
   if (preset) {
-    return { background: preset.bg, color: preset.color };
+    return { backgroundImage: preset.bg, color: preset.color };
   }
-  return { background: hex, color: '#0B100D' };
+  return { backgroundColor: normalized, color: '#0B100D' };
 }
 
 export const MatchTab: React.FC<MatchTabProps> = ({

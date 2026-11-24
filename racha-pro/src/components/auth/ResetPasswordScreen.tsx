@@ -6,14 +6,12 @@ import { BrandMark } from '../ui/BrandMark';
 interface ResetPasswordScreenProps {
   userEmail: string;
   onUpdatePassword: (newPassword: string) => Promise<AuthActionResult>;
-  onCancel: () => void;
   onSignOut: () => void;
 }
 
 export const ResetPasswordScreen: React.FC<ResetPasswordScreenProps> = ({
   userEmail,
   onUpdatePassword,
-  onCancel,
   onSignOut,
 }) => {
   const [password, setPassword] = useState('');
@@ -70,8 +68,8 @@ export const ResetPasswordScreen: React.FC<ResetPasswordScreenProps> = ({
             </h2>
           </div>
           <p className="mb-5 text-xs leading-relaxed text-[#879287]">
-            Escolha uma nova senha com pelo menos 8 caracteres para voltar a acessar sua conta com
-            segurança.
+            Por segurança, defina uma nova senha (mínimo 8 caracteres) para concluir a recuperação
+            da sua conta.
           </p>
 
           <form onSubmit={handleSubmit} className="space-y-3.5">
@@ -89,6 +87,7 @@ export const ResetPasswordScreen: React.FC<ResetPasswordScreenProps> = ({
                   placeholder="Mínimo 8 caracteres"
                   required
                   minLength={8}
+                  maxLength={128}
                   autoFocus
                   className="rp-input w-full rounded-2xl pl-10 pr-12 text-base"
                 />
@@ -117,6 +116,7 @@ export const ResetPasswordScreen: React.FC<ResetPasswordScreenProps> = ({
                   placeholder="Repita a nova senha"
                   required
                   minLength={8}
+                  maxLength={128}
                   className="rp-input w-full rounded-2xl pl-10 pr-3.5 text-base"
                 />
               </div>
@@ -135,14 +135,6 @@ export const ResetPasswordScreen: React.FC<ResetPasswordScreenProps> = ({
             >
               {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
               Salvar nova senha
-            </button>
-
-            <button
-              type="button"
-              onClick={onCancel}
-              className="min-h-[44px] w-full text-xs font-semibold text-[#879287] hover:text-[#F4F7F2]"
-            >
-              Continuar sem alterar agora
             </button>
           </form>
         </div>

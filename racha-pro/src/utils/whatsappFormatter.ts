@@ -22,6 +22,15 @@ export function colorToEmoji(hex: string): string {
 const medalFor = (idx: number): string =>
   idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : '•';
 
+/** Remove quebras de linha, caracteres de controle/BiDi e marcadores de formatação WhatsApp. */
+function cleanLabel(raw: string): string {
+  return raw
+    .replace(/[\u0000-\u001F\u007F\u202A-\u202E\u2066-\u2069]/g, ' ')
+    .replace(/[*_~`]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 export function buildWhatsAppSummary(players: Player[], history: MatchRecord[]): string {
   const playerMap = new Map(players.map((p) => [p.id, p.name]));
 
@@ -52,7 +61,11 @@ export function buildWhatsAppSummary(players: Player[], history: MatchRecord[]):
   if (history.length > 0) {
     lines.push(`🏟️ *PLACARES:*`);
     history.forEach((m, idx) => {
-      lines.push(`${idx + 1}. ${m.teamAName} *${m.scoreA} x ${m.scoreB}* ${m.teamBName}`);
+      lines.push(
+        `${idx + 1}. ${cleanLabel(m.teamAName)} *${m.scoreA} x ${m.scoreB}* ${cleanLabel(
+          m.teamBName
+        )}`
+      );
     });
     lines.push(``);
   }
@@ -60,7 +73,9 @@ export function buildWhatsAppSummary(players: Player[], history: MatchRecord[]):
   if (topScorers.length > 0) {
     lines.push(`🥅 *ARTILHARIA:*`);
     topScorers.forEach(([id, count], idx) => {
-      lines.push(`${medalFor(idx)} ${playerMap.get(id) || 'Jogador'}: *${count}* gol(s)`);
+      lines.push(
+        `${medalFor(idx)} ${cleanLabel(playerMap.get(id) || 'Jogador')}: *${count}* gol(s)`
+      );
     });
     lines.push(``);
   }
@@ -68,7 +83,9 @@ export function buildWhatsAppSummary(players: Player[], history: MatchRecord[]):
   if (topAssists.length > 0) {
     lines.push(`👟 *GARÇONS (ASSISTÊNCIAS):*`);
     topAssists.forEach(([id, count], idx) => {
-      lines.push(`${medalFor(idx)} ${playerMap.get(id) || 'Jogador'}: *${count}* assist.`);
+      lines.push(
+        `${medalFor(idx)} ${cleanLabel(playerMap.get(id) || 'Jogador')}: *${count}* assist.`
+      );
     });
     lines.push(``);
   }
@@ -96,7 +113,7 @@ export function buildAllTimeSummary(
     lines.push(`⭐ *G+A (GOLS + ASSISTÊNCIAS):*`);
     rows.slice(0, 10).forEach((r, idx) => {
       lines.push(
-        `${medalFor(idx)} ${r.name}: *${r.total}* (${r.goals}G • ${r.assists}A • ${r.wins}V)`
+        `${medalFor(idx)} ${cleanLabel(r.name)}: *${r.total}* (${r.goals}G • ${r.assists}A • ${r.wins}V)`
       );
     });
     lines.push(``);
@@ -118,11 +135,11 @@ export function buildLineupText(teams: Team[], players: Player[]): string {
 
   teams.forEach((team, idx) => {
     const tag = idx === 0 || idx === 1 ? ' — _em campo_' : ` — _próximo #${idx - 1}_`;
-    lines.push(`${colorToEmoji(team.color)} *${team.name}*${tag}`);
+    lines.push(`${colorToEmoji(team.color)} *${cleanLabel(team.name)}*${tag}`);
     team.playerIds.forEach((id, i) => {
       const p = playerMap.get(id);
       if (!p) return;
-      lines.push(`${i + 1}. ${p.name}${p.isGoalkeeper ? ' 🧤' : ''}`);
+      lines.push(`${i + 1}. ${cleanLabel(p.name)}${p.isGoalkeeper ? ' 🧤' : ''}`);
     });
     lines.push(``);
   });

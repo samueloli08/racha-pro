@@ -149,9 +149,16 @@ function fitFont(
   return size;
 }
 
+function sanitizeCanvasText(raw: string): string {
+  return raw
+    .replace(/[\u0000-\u001F\u007F\u202A-\u202E\u2066-\u2069]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 function drawCentered(
   ctx: CanvasRenderingContext2D,
-  text: string,
+  rawText: string,
   x: number,
   y: number,
   maxWidth: number,
@@ -160,7 +167,14 @@ function drawCentered(
   color: string,
   family = SANS
 ): void {
+  let text = sanitizeCanvasText(rawText);
   fitFont(ctx, text, maxWidth, size, weight, family);
+  if (ctx.measureText(text).width > maxWidth && text.length > 1) {
+    while (text.length > 1 && ctx.measureText(`${text}…`).width > maxWidth) {
+      text = text.slice(0, -1);
+    }
+    text = `${text.trimEnd()}…`;
+  }
   ctx.fillStyle = color;
   ctx.textAlign = 'center';
   ctx.fillText(text, x, y);
