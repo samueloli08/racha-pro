@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
+import type { RealtimeChannel, RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 import { MOCK_PLAYERS } from '../data/mockPlayers';
 import { supabase } from '../lib/supabase';
 import {
+  AllTimePlayerStats,
   GoalEvent,
   MatchRecord,
   Player,
@@ -24,6 +25,7 @@ import { useWakeLock } from './useWakeLock';
 
 const PUSH_DEBOUNCE_MS = 600;
 const RETRY_INTERVAL_MS = 15000;
+const HEX_COLOR_RE = /^#[0-9a-f]{6}$/i;
 
 interface RemoteRow {
   id: string;
@@ -32,6 +34,7 @@ interface RemoteRow {
 
 export interface UseRachaStoreOptions {
   rachaId: string;
+  shareCode: string;
   initialData?: unknown;
   readOnly?: boolean;
 }
@@ -60,21 +63,191 @@ const DEFAULT_STATE: RachaStoreState = {
   archivedMatches: 0,
 };
 
-/** Aceita qualquer dado antigo (localStorage / nuvem) e completa os campos novos. */
+function clampInt(value: unknown, min: number, max: number, fallback: number): number {
+  const n = typeof value === 'number' && Number.isFinite(value) ? Math.round(value) : fallback;
+  return Math.min(max, Math.max(min, n));
+}
+
+function safeStr(value: unknown, maxLen: number, fallback = ''): string {
+  if (typeof value !== 'string') return fallback;
+  return value.slice(0, maxLen);
+}
+
+function sanitizeHexColor(value: unknown): string {
+  return typeof value === 'string' && HEX_COLOR_RE.test(value) ? value : '#10b981';
+}
+
+function sanitizePlayers(raw: unknown): Player[] {
+  if (!Array.isArray(raw)) return [];
+  const out: Player[] = [];
+  for (const item of raw) {
+    if (typeof item !== 'object' || item === null) continue;
+    const p = item as Partial<Player>;
+    const id = safeStr(p.id, 80).trim();
+    const name = safeStr(p.name, 60).trim();
+    if (!id || !name) continue;
+    out.push({
+      id,
+      name,
+      isGoalkeeper: Boolean(p.isGoalkeeper),
+      skill: clampInt(p.skill, 1, 5, 3),
+      present: Boolean(p.present),
+      checkInOrder:
+        typeof p.checkInOrder === 'number' && Number.isFinite(p.checkInOrder)
+          ? p.checkInOrder
+          : undefined,
+    });
+  }
+  return out;
+}
+
+function sanitizeTeams(raw: unknown): Team[] {
+  if (!Array.isArray(raw)) return [];
+  const out: Team[] = [];
+  for (const item of raw) {
+    if (typeof item !== 'object' || item === null) continue;
+    const t = item as Partial<Team>;
+    const id = safeStr(t.id, 80).trim();
+    const name = safeStr(t.name, 40).trim();
+    if (!id || !name) continue;
+    const playerIds = Array.isArray(t.playerIds)
+      ? t.playerIds.filter((pid): pid is string => typeof pid === 'string' && pid.length <= 80)
+      : [];
+    out.push({
+      id,
+      name,
+      color: sanitizeHexColor(t.color),
+      playerIds,
+    });
+  }
+  return out;
+}
+
+function sanitizeEvents(raw: unknown): GoalEvent[] {
+  if (!Array.isArray(raw)) return [];
+  const out: GoalEvent[] = [];
+  for (const item of raw) {
+    if (typeof item !== 'object' || item === null) continue;
+    const e = item as Partial<GoalEvent>;
+    const id = safeStr(e.id, 80).trim();
+    const teamId = safeStr(e.teamId, 80).trim();
+    const scorerId = safeStr(e.scorerId, 80).trim();
+    if (!id || !teamId || !scorerId) continue;
+    out.push({
+      id,
+      teamId,
+      scorerId,
+      assistId: typeof e.assistId === 'string' && e.assistId ? e.assistId.slice(0, 80) : null,
+      minuteFormatted: safeStr(e.minuteFormatted, 16, '00:00'),
+      timestamp: typeof e.timestamp === 'number' && Number.isFinite(e.timestamp) ? e.timestamp : 0,
+    });
+  }
+  return out;
+}
+
+function sanitizeHistory(raw: unknown): MatchRecord[] {
+  if (!Array.isArray(raw)) return [];
+  const out: MatchRecord[] = [];
+  for (const item of raw) {
+    if (typeof item !== 'object' || item === null) continue;
+    const m = item as Partial<MatchRecord>;
+    const id = safeStr(m.id, 80).trim();
+    if (!id) continue;
+    out.push({
+      id,
+      teamAName: safeStr(m.teamAName, 40, 'Time A'),
+      teamBName: safeStr(m.teamBName, 40, 'Time B'),
+      scoreA: clampInt(m.scoreA, 0, 999, 0),
+      scoreB: clampInt(m.scoreB, 0, 999, 0),
+      events: sanitizeEvents(m.events),
+      finishedAt: safeStr(m.finishedAt, 20, ''),
+      teamAId: typeof m.teamAId === 'string' ? m.teamAId.slice(0, 80) : undefined,
+      teamBId: typeof m.teamBId === 'string' ? m.teamBId.slice(0, 80) : undefined,
+      teamAPlayerIds: Array.isArray(m.teamAPlayerIds)
+        ? m.teamAPlayerIds.filter((pid): pid is string => typeof pid === 'string')
+        : undefined,
+      teamBPlayerIds: Array.isArray(m.teamBPlayerIds)
+        ? m.teamBPlayerIds.filter((pid): pid is string => typeof pid === 'string')
+        : undefined,
+      goalkeeperAId: typeof m.goalkeeperAId === 'string' ? m.goalkeeperAId : m.goalkeeperAId === null ? null : undefined,
+      goalkeeperBId: typeof m.goalkeeperBId === 'string' ? m.goalkeeperBId : m.goalkeeperBId === null ? null : undefined,
+      rule:
+        m.rule === 'winner_stays' ||
+        m.rule === 'both_leave' ||
+        m.rule === 'team_a_stays' ||
+        m.rule === 'team_b_stays'
+          ? m.rule
+          : undefined,
+    });
+  }
+  return out;
+}
+
+function sanitizeAllTimeStats(raw: unknown): Record<string, AllTimePlayerStats> {
+  if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) return {};
+  const out: Record<string, AllTimePlayerStats> = {};
+  for (const [key, val] of Object.entries(raw as Record<string, unknown>)) {
+    if (key === '__proto__' || key === 'constructor' || key === 'prototype') continue;
+    if (typeof val !== 'object' || val === null) continue;
+    const s = val as Partial<AllTimePlayerStats>;
+    out[key.slice(0, 80)] = {
+      name: safeStr(s.name, 60, 'Jogador'),
+      goals: clampInt(s.goals, 0, 100000, 0),
+      assists: clampInt(s.assists, 0, 100000, 0),
+      wins: clampInt(s.wins, 0, 100000, 0),
+      matches: clampInt(s.matches, 0, 100000, 0),
+      gkMatches: clampInt(s.gkMatches, 0, 100000, 0),
+      cleanSheets: clampInt(s.cleanSheets, 0, 100000, 0),
+      goalsConceded: clampInt(s.goalsConceded, 0, 100000, 0),
+    };
+  }
+  return out;
+}
+
+/** Valida e sanitiza qualquer dado vindo do localStorage ou da nuvem (protege contra JSONB malformado). */
 function normalizeState(raw: unknown): RachaStoreState {
   const parsed = (typeof raw === 'object' && raw !== null ? raw : {}) as Partial<RachaStoreState>;
+  const rawSettings = (
+    typeof parsed.settings === 'object' && parsed.settings !== null ? parsed.settings : {}
+  ) as Partial<RachaStoreState['settings']>;
+  const rawMatch = (
+    typeof parsed.activeMatch === 'object' && parsed.activeMatch !== null ? parsed.activeMatch : {}
+  ) as Partial<RachaStoreState['activeMatch']>;
+
+  const matchDurationSeconds = clampInt(
+    rawSettings.matchDurationSeconds,
+    60,
+    3600,
+    DEFAULT_STATE.settings.matchDurationSeconds
+  );
+
   return {
-    ...DEFAULT_STATE,
-    ...parsed,
-    players: Array.isArray(parsed.players) ? parsed.players : [],
-    teams: Array.isArray(parsed.teams) ? parsed.teams : [],
-    history: Array.isArray(parsed.history) ? parsed.history : [],
-    settings: { ...DEFAULT_STATE.settings, ...parsed.settings },
-    activeMatch: { ...DEFAULT_STATE.activeMatch, ...parsed.activeMatch },
-    allTimeStats:
-      typeof parsed.allTimeStats === 'object' && parsed.allTimeStats !== null
-        ? parsed.allTimeStats
-        : {},
+    players: sanitizePlayers(parsed.players),
+    teams: sanitizeTeams(parsed.teams),
+    history: sanitizeHistory(parsed.history),
+    settings: {
+      playersPerTeam: clampInt(
+        rawSettings.playersPerTeam,
+        2,
+        15,
+        DEFAULT_STATE.settings.playersPerTeam
+      ),
+      matchDurationSeconds,
+      sortMode: rawSettings.sortMode === 'random' ? 'random' : 'balanced',
+    },
+    activeMatch: {
+      teamAId: typeof rawMatch.teamAId === 'string' ? rawMatch.teamAId.slice(0, 80) : null,
+      teamBId: typeof rawMatch.teamBId === 'string' ? rawMatch.teamBId.slice(0, 80) : null,
+      scoreA: clampInt(rawMatch.scoreA, 0, 999, 0),
+      scoreB: clampInt(rawMatch.scoreB, 0, 999, 0),
+      events: sanitizeEvents(rawMatch.events),
+      secondsRemaining: clampInt(rawMatch.secondsRemaining, 0, 7200, matchDurationSeconds),
+      isRunning: Boolean(rawMatch.isRunning),
+    },
+    allTimeStats: sanitizeAllTimeStats(parsed.allTimeStats),
+    checkInCounter: clampInt(parsed.checkInCounter, 0, 1000000, 0),
+    archivedDays: clampInt(parsed.archivedDays, 0, 100000, 0),
+    archivedMatches: clampInt(parsed.archivedMatches, 0, 1000000, 0),
   };
 }
 
@@ -101,6 +274,23 @@ function writeDirty(rachaId: string, value: boolean): void {
   } catch {
     // ignora
   }
+}
+
+function isAuthError(err: unknown): boolean {
+  const obj = (typeof err === 'object' && err !== null ? err : {}) as {
+    code?: string;
+    status?: number;
+    message?: string;
+  };
+  const code = obj.code ?? '';
+  const msg = (obj.message ?? '').toLowerCase();
+  return (
+    code === 'PGRST301' ||
+    code === '42501' ||
+    obj.status === 401 ||
+    obj.status === 403 ||
+    msg.includes('jwt')
+  );
 }
 
 function loadInitialState(
@@ -181,7 +371,12 @@ function findGoalkeeperId(team: Team, players: Player[]): string | null {
   return gk ?? null;
 }
 
-export function useRachaStore({ rachaId, initialData, readOnly = false }: UseRachaStoreOptions) {
+export function useRachaStore({
+  rachaId,
+  shareCode,
+  initialData,
+  readOnly = false,
+}: UseRachaStoreOptions) {
   const [state, setState] = useState<RachaStoreState>(() =>
     loadInitialState(rachaId, initialData, readOnly)
   );
@@ -191,6 +386,8 @@ export function useRachaStore({ rachaId, initialData, readOnly = false }: UseRac
   });
   const [cloudReady, setCloudReady] = useState(false);
   const [remoteUpdateTick, setRemoteUpdateTick] = useState(0);
+  const [authExpired, setAuthExpired] = useState(false);
+  const [linkRevoked, setLinkRevoked] = useState(false);
 
   const stateRef = useRef(state);
   stateRef.current = state;
@@ -200,6 +397,7 @@ export function useRachaStore({ rachaId, initialData, readOnly = false }: UseRac
       : null
   );
   const cloudReadyRef = useRef(false);
+  const broadcastChannelRef = useRef<RealtimeChannel | null>(null);
 
   const currentKey = useMemo(() => syncKey(state), [state]);
 
@@ -207,44 +405,72 @@ export function useRachaStore({ rachaId, initialData, readOnly = false }: UseRac
   useWakeLock(!readOnly && state.activeMatch.isRunning);
 
   // ---------------------------------------------------------------------------
-  // Nuvem: leitura (inicial e reconexão)
+  // Nuvem: leitura (dono via tabela protegida por RLS; visitante via RPC segura)
   // ---------------------------------------------------------------------------
-  const syncFromCloud = useCallback(async (): Promise<void> => {
-    if (!supabase || !rachaId) return;
-    try {
-      const { data, error } = await supabase
-        .from('rachas')
-        .select('data')
-        .eq('id', rachaId)
-        .maybeSingle();
-      if (error) throw error;
+  const syncFromCloud = useCallback(
+    async (notifyIfChanged = false): Promise<void> => {
+      if (!supabase || !rachaId) return;
+      try {
+        let cloud: unknown = null;
 
-      const cloud: unknown = data?.data;
-      const hasUnsynced = readOnly
-        ? false
-        : cloudReadyRef.current
-        ? syncKey(stateRef.current) !== lastSyncedKeyRef.current
-        : readDirty(rachaId);
+        if (readOnly) {
+          const { data, error } = await supabase.rpc('get_racha_by_share_code', {
+            p_share_code: shareCode.trim().toLowerCase(),
+          });
+          if (error) throw error;
+          const row = Array.isArray(data) ? data[0] : data;
+          if (!row) {
+            setLinkRevoked(true);
+            setSyncStatus('offline');
+            return;
+          }
+          setLinkRevoked(false);
+          cloud = (row as { data?: unknown }).data;
+        } else {
+          const { data, error } = await supabase
+            .from('rachas')
+            .select('data')
+            .eq('id', rachaId)
+            .maybeSingle();
+          if (error) throw error;
+          cloud = data?.data;
+        }
 
-      if (isNonEmptyObject(cloud) && !hasUnsynced) {
-        const next = applyRemote(stateRef.current, cloud);
-        lastSyncedKeyRef.current = syncKey(next);
-        if (syncKey(next) !== syncKey(stateRef.current)) setState(next);
-        setSyncStatus('synced');
-      } else if (!hasUnsynced) {
-        lastSyncedKeyRef.current = syncKey(stateRef.current);
-        setSyncStatus('synced');
+        const hasUnsynced = readOnly
+          ? false
+          : cloudReadyRef.current
+          ? syncKey(stateRef.current) !== lastSyncedKeyRef.current
+          : readDirty(rachaId);
+
+        if (isNonEmptyObject(cloud) && !hasUnsynced) {
+          const next = applyRemote(stateRef.current, cloud);
+          const nextKey = syncKey(next);
+          lastSyncedKeyRef.current = nextKey;
+          if (nextKey !== syncKey(stateRef.current)) {
+            setState(next);
+            if (notifyIfChanged) setRemoteUpdateTick((t) => t + 1);
+          }
+          setSyncStatus('synced');
+        } else if (!hasUnsynced) {
+          lastSyncedKeyRef.current = syncKey(stateRef.current);
+          setSyncStatus('synced');
+        }
+
+        setAuthExpired(false);
+        cloudReadyRef.current = true;
+        setCloudReady(true);
+      } catch (err) {
+        if (!readOnly && isAuthError(err)) {
+          setAuthExpired(true);
+        }
+        setSyncStatus('offline');
       }
-
-      cloudReadyRef.current = true;
-      setCloudReady(true);
-    } catch {
-      setSyncStatus('offline');
-    }
-  }, [rachaId, readOnly]);
+    },
+    [rachaId, readOnly, shareCode]
+  );
 
   useEffect(() => {
-    void syncFromCloud();
+    void syncFromCloud(false);
   }, [syncFromCloud]);
 
   // ---------------------------------------------------------------------------
@@ -275,6 +501,7 @@ export function useRachaStore({ rachaId, initialData, readOnly = false }: UseRac
         .eq('id', rachaId);
       if (error) throw error;
 
+      setAuthExpired(false);
       lastSyncedKeyRef.current = snapshotKey;
       if (syncKey(stateRef.current) === snapshotKey) {
         writeDirty(rachaId, false);
@@ -282,7 +509,22 @@ export function useRachaStore({ rachaId, initialData, readOnly = false }: UseRac
       } else {
         setSyncStatus('saving');
       }
-    } catch {
+
+      // Sinal leve (sem dados) para visitantes em modo leitura atualizarem imediatamente via RPC
+      const ch = broadcastChannelRef.current;
+      if (ch) {
+        void ch
+          .send({
+            type: 'broadcast',
+            event: 'state_updated',
+            payload: { ts: Date.now() },
+          })
+          .catch(() => undefined);
+      }
+    } catch (err) {
+      if (isAuthError(err)) {
+        setAuthExpired(true);
+      }
       setSyncStatus('offline');
     }
   }, [rachaId, readOnly]);
@@ -325,7 +567,8 @@ export function useRachaStore({ rachaId, initialData, readOnly = false }: UseRac
   // Conectividade: reenvia ao voltar a internet e tenta periodicamente
   const retrySync = useCallback((): void => {
     if (!supabase) return;
-    if (readOnly || !cloudReadyRef.current) void syncFromCloud();
+    if (readOnly) void syncFromCloud(true);
+    else if (!cloudReadyRef.current) void syncFromCloud(false);
     else void pushToCloud();
   }, [pushToCloud, syncFromCloud, readOnly]);
 
@@ -336,7 +579,7 @@ export function useRachaStore({ rachaId, initialData, readOnly = false }: UseRac
     window.addEventListener('online', goOnline);
     window.addEventListener('offline', goOffline);
     const interval = window.setInterval(() => {
-      if (navigator.onLine) retrySync();
+      if (navigator.onLine && document.visibilityState === 'visible') retrySync();
     }, RETRY_INTERVAL_MS);
     return () => {
       window.removeEventListener('online', goOnline);
@@ -346,49 +589,68 @@ export function useRachaStore({ rachaId, initialData, readOnly = false }: UseRac
   }, [retrySync]);
 
   // ---------------------------------------------------------------------------
-  // Supabase Realtime (dono multi-aparelho + link somente leitura)
+  // Supabase Realtime:
+  // - Dono: postgres_changes (multi-aparelho protegido por RLS) + canal de broadcast p/ visitantes
+  // - Visitante (somente leitura): escuta broadcast e busca via RPC segura
   // ---------------------------------------------------------------------------
   useEffect(() => {
-    if (!supabase || !rachaId) return;
+    if (!supabase || !rachaId || !shareCode) return;
     const client = supabase;
 
-    const channel = client
-      .channel(`racha_${rachaId}`)
-      .on(
-        'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'rachas', filter: `id=eq.${rachaId}` },
-        (payload: RealtimePostgresChangesPayload<RemoteRow>) => {
-          if (payload.eventType === 'DELETE') return;
-          const remoteData: unknown = payload.new.data;
-          if (!isNonEmptyObject(remoteData)) return;
-
-          const local = stateRef.current;
-          // No modo edição, alterações locais pendentes vencem (serão enviadas em instantes)
-          if (!readOnly && cloudReadyRef.current && syncKey(local) !== lastSyncedKeyRef.current) {
-            return;
-          }
-
-          const next = applyRemote(local, remoteData);
-          const nextKey = syncKey(next);
-          if (nextKey === syncKey(local)) {
-            lastSyncedKeyRef.current = nextKey;
-            return;
-          }
-
-          lastSyncedKeyRef.current = nextKey;
-          setState(next);
-          setSyncStatus('synced');
-          setRemoteUpdateTick((t) => t + 1);
-        }
-      )
-      .subscribe((status) => {
-        if (status === 'SUBSCRIBED' && cloudReadyRef.current) void syncFromCloud();
+    const liveChannel = client.channel(`racha_live_${shareCode.toLowerCase()}`);
+    if (readOnly) {
+      liveChannel.on('broadcast', { event: 'state_updated' }, () => {
+        void syncFromCloud(true);
       });
+    }
+    liveChannel.subscribe((status) => {
+      if (status === 'SUBSCRIBED' && readOnly && cloudReadyRef.current) {
+        void syncFromCloud(true);
+      }
+    });
+    broadcastChannelRef.current = liveChannel;
+
+    let ownerChangesChannel: RealtimeChannel | null = null;
+    if (!readOnly) {
+      ownerChangesChannel = client
+        .channel(`racha_owner_${rachaId}`)
+        .on(
+          'postgres_changes',
+          { event: 'UPDATE', schema: 'public', table: 'rachas', filter: `id=eq.${rachaId}` },
+          (payload: RealtimePostgresChangesPayload<RemoteRow>) => {
+            if (payload.eventType === 'DELETE') return;
+            const remoteData: unknown = payload.new.data;
+            if (!isNonEmptyObject(remoteData)) return;
+
+            const local = stateRef.current;
+            if (cloudReadyRef.current && syncKey(local) !== lastSyncedKeyRef.current) {
+              return;
+            }
+
+            const next = applyRemote(local, remoteData);
+            const nextKey = syncKey(next);
+            if (nextKey === syncKey(local)) {
+              lastSyncedKeyRef.current = nextKey;
+              return;
+            }
+
+            lastSyncedKeyRef.current = nextKey;
+            setState(next);
+            setSyncStatus('synced');
+            setRemoteUpdateTick((t) => t + 1);
+          }
+        )
+        .subscribe((status) => {
+          if (status === 'SUBSCRIBED' && cloudReadyRef.current) void syncFromCloud(false);
+        });
+    }
 
     return () => {
-      void client.removeChannel(channel);
+      broadcastChannelRef.current = null;
+      void client.removeChannel(liveChannel);
+      if (ownerChangesChannel) void client.removeChannel(ownerChangesChannel);
     };
-  }, [rachaId, readOnly, syncFromCloud]);
+  }, [rachaId, shareCode, readOnly, syncFromCloud]);
 
   // ---------------------------------------------------------------------------
   // Cronômetro
@@ -442,7 +704,7 @@ export function useRachaStore({ rachaId, initialData, readOnly = false }: UseRac
   // ---------------------------------------------------------------------------
   const addPlayer = (name: string, isGoalkeeper: boolean, skill: number): string | null => {
     if (readOnly) return null;
-    const trimmed = name.trim();
+    const trimmed = name.trim().slice(0, 60);
     if (!trimmed) return null;
     const id = `player-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
     setState((prev) => {
@@ -451,7 +713,7 @@ export function useRachaStore({ rachaId, initialData, readOnly = false }: UseRac
         id,
         name: trimmed,
         isGoalkeeper,
-        skill,
+        skill: clampInt(skill, 1, 5, 3),
         present: true,
         checkInOrder: order,
       };
@@ -515,8 +777,9 @@ export function useRachaStore({ rachaId, initialData, readOnly = false }: UseRac
       ...prev,
       players: prev.players.map((p) => {
         if (p.id !== playerId) return p;
-        const name = patch.name !== undefined ? patch.name.trim() : p.name;
-        return { ...p, ...patch, name: name || p.name };
+        const name = patch.name !== undefined ? patch.name.trim().slice(0, 60) : p.name;
+        const skill = patch.skill !== undefined ? clampInt(patch.skill, 1, 5, p.skill) : p.skill;
+        return { ...p, ...patch, name: name || p.name, skill };
       }),
     }));
   };
@@ -549,7 +812,11 @@ export function useRachaStore({ rachaId, initialData, readOnly = false }: UseRac
     if (readOnly) return;
     setState((prev) => ({
       ...prev,
-      settings: { ...prev.settings, playersPerTeam, sortMode },
+      settings: {
+        ...prev.settings,
+        playersPerTeam: clampInt(playersPerTeam, 2, 15, prev.settings.playersPerTeam),
+        sortMode,
+      },
     }));
   };
 
@@ -619,9 +886,10 @@ export function useRachaStore({ rachaId, initialData, readOnly = false }: UseRac
 
   const setTeamColor = (teamId: string, color: string) => {
     if (readOnly) return;
+    const safeColor = sanitizeHexColor(color);
     setState((prev) => ({
       ...prev,
-      teams: prev.teams.map((t) => (t.id === teamId ? { ...t, color } : t)),
+      teams: prev.teams.map((t) => (t.id === teamId ? { ...t, color: safeColor } : t)),
     }));
   };
 
@@ -686,14 +954,14 @@ export function useRachaStore({ rachaId, initialData, readOnly = false }: UseRac
       ...prev,
       activeMatch: {
         ...prev.activeMatch,
-        secondsRemaining: prev.activeMatch.secondsRemaining + 60,
+        secondsRemaining: Math.min(7200, prev.activeMatch.secondsRemaining + 60),
       },
     }));
   };
 
   const setMatchDurationMinutes = (minutes: number) => {
     if (readOnly) return;
-    const seconds = minutes * 60;
+    const seconds = clampInt(minutes * 60, 60, 3600, DEFAULT_STATE.settings.matchDurationSeconds);
     setState((prev) => ({
       ...prev,
       settings: { ...prev.settings, matchDurationSeconds: seconds },
@@ -898,6 +1166,8 @@ export function useRachaStore({ rachaId, initialData, readOnly = false }: UseRac
     state,
     syncStatus,
     remoteUpdateTick,
+    authExpired,
+    linkRevoked,
     retrySync,
     addPlayer,
     togglePresence,

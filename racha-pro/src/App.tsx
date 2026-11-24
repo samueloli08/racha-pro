@@ -3,6 +3,7 @@ import { AlertCircle, Loader2, LogOut, RefreshCw, Trophy } from 'lucide-react';
 import { AuthScreen } from './components/auth/AuthScreen';
 import { FirstRachaScreen } from './components/auth/FirstRachaScreen';
 import { RachasModal } from './components/auth/RachasModal';
+import { ResetPasswordScreen } from './components/auth/ResetPasswordScreen';
 import { BottomNav } from './components/layout/BottomNav';
 import { Header } from './components/layout/Header';
 import { MatchTab } from './components/match/MatchTab';
@@ -30,6 +31,7 @@ interface RachaWorkspaceProps {
   onOpenRachas?: () => void;
   onOpenAuth?: () => void;
   onBackToMyRachas?: () => void;
+  onSignOut?: () => void;
 }
 
 function RachaWorkspace({
@@ -39,11 +41,13 @@ function RachaWorkspace({
   onOpenRachas,
   onOpenAuth,
   onBackToMyRachas,
+  onSignOut,
 }: RachaWorkspaceProps) {
   const [activeTab, setActiveTab] = useState<TabId>(readOnly ? 'match' : 'players');
   const toast = useToast();
   const store = useRachaStore({
     rachaId: racha.id,
+    shareCode: racha.share_code,
     initialData: racha.data,
     readOnly,
   });
@@ -72,6 +76,10 @@ function RachaWorkspace({
   }, [store.remoteUpdateTick, toast, readOnly]);
 
   const handleCopyShareLink = async () => {
+    if (!racha.is_public) {
+      toast.show('Link de leitura está pausado. Reative em Meus Rachas.', 'info');
+      return;
+    }
     const ok = await copyText(buildShareUrl(racha.share_code));
     toast.show(
       ok ? 'Link de leitura copiado! Envie no grupo.' : 'Não foi possível copiar o link',
@@ -144,6 +152,28 @@ function RachaWorkspace({
       />
 
       <main className="mx-auto max-w-2xl px-4 pt-5 sm:px-6 sm:pt-7">
+        {store.authExpired && !readOnly && (
+          <div className="mb-4 flex items-center justify-between gap-3 rounded-2xl border border-amber-400/40 bg-amber-500/10 px-4 py-3 text-xs text-amber-200">
+            <span>Sua sessão expirou e as alterações estão salvas só neste aparelho.</span>
+            {onSignOut && (
+              <button
+                type="button"
+                onClick={onSignOut}
+                className="shrink-0 rounded-xl bg-amber-400 px-3 text-xs font-extrabold text-zinc-950"
+              >
+                Entrar de novo
+              </button>
+            )}
+          </div>
+        )}
+
+        {store.linkRevoked && readOnly && (
+          <div className="mb-4 rounded-2xl border border-amber-400/40 bg-amber-500/10 px-4 py-3 text-xs text-amber-200">
+            Este link foi pausado ou alterado pelo organizador. Peça o novo link no grupo para
+            continuar recebendo atualizações.
+          </div>
+        )}
+
         {activeTab !== 'match' && (
           <section className="page-intro">
             <p className="page-eyebrow">{intro.eyebrow}</p>
@@ -245,10 +275,11 @@ export function App() {
   const [shareCode, setShareCode] = useState<string | null>(() => getShareCodeFromUrl());
   const [wantsAuth, setWantsAuth] = useState(false);
   const [showRachasModal, setShowRachasModal] = useState(false);
+  const toast = useToast();
 
   const auth = useAuth();
   const owned = useOwnedRachas(auth.user?.id ?? null);
-  const shared = useSharedRacha(shareCode);
+  const shared = useSharedRacha(shareCode, auth.user?.id ?? null);
 
   useEffect(() => {
     const onPopState = () => setShareCode(getShareCodeFromUrl());
@@ -270,6 +301,22 @@ export function App() {
     clearShareCodeFromUrl();
     setShareCode(null);
   };
+
+  // Fluxo de redefinição de senha (quando o usuário clica no link de recuperação por e-mail)
+  if (auth.isPasswordRecovery && auth.user) {
+    return (
+      <ResetPasswordScreen
+        userEmail={auth.user.email ?? ''}
+        onUpdatePassword={async (newPassword) => {
+          const res = await auth.updatePassword(newPassword);
+          if (!res.error) toast.show('Senha atualizada com sucesso!');
+          return res;
+        }}
+        onCancel={auth.cancelPasswordRecovery}
+        onSignOut={() => void auth.signOut()}
+      />
+    );
+  }
 
   // Tela de login solicitada manualmente a partir de um link somente leitura
   if (wantsAuth && !auth.user) {
@@ -304,7 +351,7 @@ export function App() {
               </h2>
               <p className="mt-1 text-xs leading-relaxed text-zinc-400">
                 {shared.notFound
-                  ? 'Verifique se o link está completo ou peça um novo link ao organizador.'
+                  ? 'Verifique se o link está completo ou se o organizador pausou o compartilhamento.'
                   : shared.error || 'Não foi possível carregar este racha agora.'}
               </p>
             </div>
@@ -329,10 +376,14 @@ export function App() {
       );
     }
 
-    const isOwner = Boolean(auth.user && auth.user.id === shared.racha.owner_id);
-    const activeRacha = isOwner
-      ? owned.rachas.find((r) => r.id === shared.racha?.id) ?? shared.racha
-      : shared.racha;
+    const ownedMatch = owned.rachas.find((r) => r.id === shared.racha?.id);
+    const isOwner = Boolean(
+      auth.user &&
+        (shared.racha.is_owner === true ||
+          Boolean(ownedMatch) ||
+          (shared.racha.owner_id && auth.user.id === shared.racha.owner_id))
+    );
+    const activeRacha = isOwner ? ownedMatch ?? shared.racha : shared.racha;
 
     return (
       <>
@@ -344,6 +395,7 @@ export function App() {
           onOpenRachas={isOwner ? () => setShowRachasModal(true) : undefined}
           onOpenAuth={() => setWantsAuth(true)}
           onBackToMyRachas={exitShareMode}
+          onSignOut={() => void auth.signOut()}
         />
 
         {isOwner && auth.user && showRachasModal && (
@@ -361,6 +413,15 @@ export function App() {
               return res;
             }}
             onRename={owned.renameRacha}
+            onTogglePublic={owned.setRachaPublic}
+            onRegenerateShareCode={async (id) => {
+              const res = await owned.regenerateShareCode(id);
+              if (res.shareCode && id === activeRacha.id) {
+                setShareCodeInUrl(res.shareCode);
+                setShareCode(res.shareCode);
+              }
+              return res;
+            }}
             onDelete={async (id) => {
               const res = await owned.deleteRacha(id);
               if (!res.error && id === activeRacha.id) exitShareMode();
@@ -452,6 +513,7 @@ export function App() {
         readOnly={false}
         isLoggedIn={true}
         onOpenRachas={() => setShowRachasModal(true)}
+        onSignOut={() => void auth.signOut()}
       />
 
       {showRachasModal && (
@@ -462,6 +524,8 @@ export function App() {
           onSelect={owned.selectRacha}
           onCreate={(name) => owned.createRacha(name)}
           onRename={owned.renameRacha}
+          onTogglePublic={owned.setRachaPublic}
+          onRegenerateShareCode={owned.regenerateShareCode}
           onDelete={owned.deleteRacha}
           onSignOut={() => void auth.signOut()}
           onClose={() => setShowRachasModal(false)}

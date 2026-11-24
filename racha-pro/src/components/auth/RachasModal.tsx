@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
 import {
   Check,
+  Globe,
   Link2,
   Loader2,
+  Lock,
   LogOut,
   Pencil,
   Plus,
+  RefreshCw,
   Trash2,
   Trophy,
   X,
@@ -22,6 +25,8 @@ interface RachasModalProps {
   onSelect: (id: string) => void;
   onCreate: (name: string) => Promise<{ racha: RachaRecord | null; error: string | null }>;
   onRename: (id: string, name: string) => Promise<{ error: string | null }>;
+  onTogglePublic: (id: string, isPublic: boolean) => Promise<{ error: string | null }>;
+  onRegenerateShareCode: (id: string) => Promise<{ shareCode: string | null; error: string | null }>;
   onDelete: (id: string) => Promise<{ error: string | null }>;
   onSignOut: () => void;
   onClose: () => void;
@@ -34,6 +39,8 @@ export const RachasModal: React.FC<RachasModalProps> = ({
   onSelect,
   onCreate,
   onRename,
+  onTogglePublic,
+  onRegenerateShareCode,
   onDelete,
   onSignOut,
   onClose,
@@ -74,6 +81,37 @@ export const RachasModal: React.FC<RachasModalProps> = ({
     setEditingId(null);
   };
 
+  const handleTogglePublic = async (racha: RachaRecord) => {
+    setBusyId(racha.id);
+    const next = !racha.is_public;
+    const res = await onTogglePublic(racha.id, next);
+    setBusyId(null);
+    if (res.error) {
+      toast.show(res.error, 'error');
+      return;
+    }
+    toast.show(next ? 'Link de leitura ativado' : 'Link de leitura pausado (privado)', 'info');
+  };
+
+  const handleRegenerate = async (racha: RachaRecord) => {
+    const ok = window.confirm(
+      `Gerar um novo link para "${racha.name}"? O link antigo deixará de funcionar imediatamente.`
+    );
+    if (!ok) return;
+    setBusyId(racha.id);
+    const res = await onRegenerateShareCode(racha.id);
+    setBusyId(null);
+    if (res.error || !res.shareCode) {
+      toast.show(res.error || 'Não foi possível gerar novo link', 'error');
+      return;
+    }
+    const copied = await copyText(buildShareUrl(res.shareCode));
+    toast.show(
+      copied ? 'Novo link gerado e copiado!' : 'Novo link gerado! O antigo foi revogado.',
+      'success'
+    );
+  };
+
   const handleDelete = async (racha: RachaRecord) => {
     const ok = window.confirm(
       `Apagar o racha "${racha.name}" permanentemente? Elenco, placares e histórico dele serão perdidos.`
@@ -87,6 +125,10 @@ export const RachasModal: React.FC<RachasModalProps> = ({
   };
 
   const handleCopyShare = async (racha: RachaRecord) => {
+    if (!racha.is_public) {
+      toast.show('Link está pausado. Ative o acesso público abaixo para compartilhar.', 'info');
+      return;
+    }
     const url = buildShareUrl(racha.share_code);
     const ok = await copyText(url);
     toast.show(
@@ -144,7 +186,7 @@ export const RachasModal: React.FC<RachasModalProps> = ({
             </button>
           </form>
 
-          <div className="space-y-2">
+          <div className="space-y-2.5">
             {rachas.map((racha) => {
               const isActive = racha.id === activeRachaId;
               const isEditing = editingId === racha.id;
@@ -193,61 +235,99 @@ export const RachasModal: React.FC<RachasModalProps> = ({
                       </button>
                     </form>
                   ) : (
-                    <div className="flex items-center justify-between gap-2">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          onSelect(racha.id);
-                          onClose();
-                        }}
-                        className="min-h-[44px] min-w-0 flex-1 text-left"
-                      >
-                        <div className="flex items-center gap-2">
-                          <span className="truncate text-sm font-extrabold text-white">
-                            {racha.name}
-                          </span>
-                          {isActive && (
-                            <span className="shrink-0 rounded-md bg-lime-300/20 px-1.5 py-0.5 font-mono text-[10px] font-extrabold uppercase text-lime-300">
-                              Ativo
-                            </span>
-                          )}
-                        </div>
-                        <p className="mt-0.5 font-mono text-[11px] text-zinc-500">
-                          código: {racha.share_code}
-                        </p>
-                      </button>
-
-                      <div className="flex shrink-0 items-center gap-0.5">
-                        <button
-                          type="button"
-                          onClick={() => void handleCopyShare(racha)}
-                          title="Copiar link somente leitura"
-                          aria-label={`Copiar link de ${racha.name}`}
-                          className="flex h-10 w-10 items-center justify-center rounded-xl text-lime-300 hover:bg-lime-400/15"
-                        >
-                          <Link2 className="h-4 w-4" />
-                        </button>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between gap-2">
                         <button
                           type="button"
                           onClick={() => {
-                            setEditingId(racha.id);
-                            setEditDraft(racha.name);
+                            onSelect(racha.id);
+                            onClose();
                           }}
-                          title="Renomear racha"
-                          aria-label={`Renomear ${racha.name}`}
-                          className="flex h-10 w-10 items-center justify-center rounded-xl text-zinc-400 hover:bg-white/5 hover:text-amber-300"
+                          className="min-h-[44px] min-w-0 flex-1 text-left"
                         >
-                          <Pencil className="h-4 w-4" />
+                          <div className="flex items-center gap-2">
+                            <span className="truncate text-sm font-extrabold text-white">
+                              {racha.name}
+                            </span>
+                            {isActive && (
+                              <span className="shrink-0 rounded-md bg-lime-300/20 px-1.5 py-0.5 font-mono text-[10px] font-extrabold uppercase text-lime-300">
+                                Ativo
+                              </span>
+                            )}
+                          </div>
+                          <p className="mt-0.5 font-mono text-[11px] text-zinc-500">
+                            {racha.is_public ? `link ativo • ${racha.share_code}` : 'link pausado (privado)'}
+                          </p>
+                        </button>
+
+                        <div className="flex shrink-0 items-center gap-0.5">
+                          <button
+                            type="button"
+                            onClick={() => void handleCopyShare(racha)}
+                            title="Copiar link somente leitura"
+                            aria-label={`Copiar link de ${racha.name}`}
+                            className={`flex h-10 w-10 items-center justify-center rounded-xl ${
+                              racha.is_public
+                                ? 'text-lime-300 hover:bg-lime-400/15'
+                                : 'text-zinc-600 hover:bg-white/5'
+                            }`}
+                          >
+                            <Link2 className="h-4 w-4" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingId(racha.id);
+                              setEditDraft(racha.name);
+                            }}
+                            title="Renomear racha"
+                            aria-label={`Renomear ${racha.name}`}
+                            className="flex h-10 w-10 items-center justify-center rounded-xl text-zinc-400 hover:bg-white/5 hover:text-amber-300"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </button>
+                          <button
+                            type="button"
+                            disabled={isBusy}
+                            onClick={() => void handleDelete(racha)}
+                            title="Excluir racha"
+                            aria-label={`Excluir ${racha.name}`}
+                            className="flex h-10 w-10 items-center justify-center rounded-xl text-zinc-400 hover:bg-white/5 hover:text-red-400 disabled:opacity-40"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-1.5 border-t border-white/5 pt-2">
+                        <button
+                          type="button"
+                          disabled={isBusy}
+                          onClick={() => void handleTogglePublic(racha)}
+                          className={`inline-flex min-h-[34px] flex-1 items-center justify-center gap-1.5 rounded-lg border px-2 text-[11px] font-bold transition disabled:opacity-40 ${
+                            racha.is_public
+                              ? 'border-lime-300/25 bg-lime-400/10 text-lime-200 hover:bg-lime-400/15'
+                              : 'border-amber-400/25 bg-amber-400/10 text-amber-200 hover:bg-amber-400/15'
+                          }`}
+                        >
+                          {racha.is_public ? (
+                            <>
+                              <Globe className="h-3.5 w-3.5" /> Link público ativo
+                            </>
+                          ) : (
+                            <>
+                              <Lock className="h-3.5 w-3.5" /> Link pausado
+                            </>
+                          )}
                         </button>
                         <button
                           type="button"
                           disabled={isBusy}
-                          onClick={() => void handleDelete(racha)}
-                          title="Excluir racha"
-                          aria-label={`Excluir ${racha.name}`}
-                          className="flex h-10 w-10 items-center justify-center rounded-xl text-zinc-400 hover:bg-white/5 hover:text-red-400 disabled:opacity-40"
+                          onClick={() => void handleRegenerate(racha)}
+                          title="Invalidar link atual e gerar um novo"
+                          className="inline-flex min-h-[34px] items-center justify-center gap-1 rounded-lg border border-white/10 bg-zinc-900 px-2.5 text-[11px] font-bold text-zinc-300 transition hover:border-white/25 hover:text-white disabled:opacity-40"
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <RefreshCw className="h-3 w-3" /> Trocar link
                         </button>
                       </div>
                     </div>
