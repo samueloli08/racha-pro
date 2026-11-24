@@ -7,28 +7,34 @@ import { ResetPasswordScreen } from './components/auth/ResetPasswordScreen';
 import { BottomNav } from './components/layout/BottomNav';
 import { Header } from './components/layout/Header';
 import { MatchTab } from './components/match/MatchTab';
+import { MemberLinkModal } from './components/players/MemberLinkModal';
 import { PlayersTab } from './components/players/PlayersTab';
 import { SortTab } from './components/sort/SortTab';
 import { StatsTab } from './components/stats/StatsTab';
 import { BrandMark } from './components/ui/BrandMark';
 import { useToast } from './components/ui/Toast';
 import { useAuth } from './hooks/useAuth';
+import { useRachaMembers } from './hooks/useRachaMembers';
 import {
   buildShareUrl,
   clearShareCodeFromUrl,
   getShareCodeFromUrl,
   setShareCodeInUrl,
-  useOwnedRachas,
   useSharedRacha,
+  useUserRachas,
 } from './hooks/useRachas';
+import { useRachaSessions } from './hooks/useRachaSessions';
 import { useRachaStore } from './hooks/useRachaStore';
-import { RachaRecord, TabId } from './types/racha';
+import { RachaRecord, RachaRole, TabId } from './types/racha';
 import { copyText } from './utils/clipboard';
+import { getRachaPermissions } from './utils/permissions';
 
 interface RachaWorkspaceProps {
   racha: RachaRecord;
-  readOnly: boolean;
+  role: RachaRole;
+  userId: string | null;
   isLoggedIn: boolean;
+  migrationNeeded?: boolean;
   onOpenRachas?: () => void;
   onOpenAuth?: () => void;
   onBackToMyRachas?: () => void;
@@ -37,32 +43,50 @@ interface RachaWorkspaceProps {
 
 function RachaWorkspace({
   racha,
-  readOnly,
+  role,
+  userId,
   isLoggedIn,
+  migrationNeeded = false,
   onOpenRachas,
   onOpenAuth,
   onBackToMyRachas,
   onSignOut,
 }: RachaWorkspaceProps) {
-  const [activeTab, setActiveTab] = useState<TabId>(readOnly ? 'match' : 'players');
+  const isAdmin = role === 'admin';
+  const isViewer = role === 'viewer';
+  const readOnly = !isAdmin;
+
+  const [activeTab, setActiveTab] = useState<TabId>(isViewer ? 'match' : 'players');
+  const [showMembersModal, setShowMembersModal] = useState(false);
   const toast = useToast();
+
   const store = useRachaStore({
     rachaId: racha.id,
     shareCode: racha.share_code,
+    userId,
     initialData: racha.data,
-    readOnly,
+    initialVersion: racha.version ?? null,
+    role,
   });
   const { state } = store;
+
+  const membersState = useRachaMembers(racha.id, userId, role);
+  const sessionsState = useRachaSessions(racha.id, userId, role);
+
+  const myPlayerId = membersState.myMember?.player_id ?? racha.my_player_id ?? null;
+  const perms = getRachaPermissions(role, Boolean(myPlayerId));
+  const anyAuthExpired =
+    store.authExpired || membersState.authExpired || sessionsState.authExpired;
 
   // Se o link de leitura abrir sem times sorteados ainda, começa na aba Elenco
   const initializedTabRef = useRef(false);
   useEffect(() => {
     if (initializedTabRef.current) return;
     initializedTabRef.current = true;
-    if (readOnly && state.teams.length === 0) {
+    if (isViewer && state.teams.length === 0) {
       setActiveTab('players');
     }
-  }, [readOnly, state.teams.length]);
+  }, [isViewer, state.teams.length]);
 
   // Aviso discreto quando outro aparelho altera os dados (tempo real)
   const lastTick = useRef(store.remoteUpdateTick);
@@ -90,8 +114,54 @@ function RachaWorkspace({
 
   const presentCount = state.players.filter((p) => p.present).length;
   const sortLabel = state.settings.sortMode === 'balanced' ? 'EQUILIBRADO' : 'ALEATÓRIO';
-  const pageIntro: Record<TabId, { eyebrow: string; title: string; description: string }> = readOnly
+
+  const pageIntro: Record<TabId, { eyebrow: string; title: string; description: string }> = isAdmin
     ? {
+        players: {
+          eyebrow: `ELENCO · ${presentCount} PRESENTES`,
+          title: 'Quem está na quadra hoje',
+          description: 'Abra confirmações da sessão, faça check-in e deixe o racha pronto.',
+        },
+        sort: {
+          eyebrow: `SORTEIO · ${sortLabel}`,
+          title: 'Times de hoje',
+          description: 'Equilibre os coletes e ajuste qualquer jogador com um toque.',
+        },
+        match: {
+          eyebrow: 'AO VIVO',
+          title: 'Placar em campo',
+          description: 'Controle o cronômetro, registre os gols e gire a fila.',
+        },
+        stats: {
+          eyebrow: `NÚMEROS · ${state.history.length} PARTIDAS`,
+          title: 'Quem decidiu o racha',
+          description: 'Suas estatísticas, artilharia, card de Stories e resumo pro grupo.',
+        },
+      }
+    : role === 'member'
+    ? {
+        players: {
+          eyebrow: `ELENCO · ${presentCount} PRESENTES`,
+          title: 'Quem está na quadra hoje',
+          description: 'Confirme sua presença na próxima sessão e veja quem já confirmou.',
+        },
+        sort: {
+          eyebrow: `TIMES · ${state.teams.length} EQUIPES`,
+          title: 'Times de hoje',
+          description: 'Confira a divisão dos coletes e a ordem da fila.',
+        },
+        match: {
+          eyebrow: 'AO VIVO',
+          title: 'Placar em campo',
+          description: 'Acompanhe o placar e os lances ao vivo.',
+        },
+        stats: {
+          eyebrow: `NÚMEROS · ${state.history.length} PARTIDAS`,
+          title: 'Seus números e o racha',
+          description: 'Acompanhe seu desempenho individual e o ranking geral do racha.',
+        },
+      }
+    : {
         players: {
           eyebrow: `ELENCO · ${presentCount} PRESENTES`,
           title: 'Quem está na quadra hoje',
@@ -112,29 +182,8 @@ function RachaWorkspace({
           title: 'Quem decidiu o racha',
           description: 'Artilharia, garçons, goleiros e histórico completo.',
         },
-      }
-    : {
-        players: {
-          eyebrow: `ELENCO · ${presentCount} PRESENTES`,
-          title: 'Quem está na quadra hoje',
-          description: 'Marque quem chegou e deixe o racha pronto para sortear.',
-        },
-        sort: {
-          eyebrow: `SORTEIO · ${sortLabel}`,
-          title: 'Times de hoje',
-          description: 'Equilibre os coletes e ajuste qualquer jogador com um toque.',
-        },
-        match: {
-          eyebrow: 'AO VIVO',
-          title: 'Placar em campo',
-          description: 'Controle o cronômetro, registre os gols e gire a fila.',
-        },
-        stats: {
-          eyebrow: `NÚMEROS · ${state.history.length} PARTIDAS`,
-          title: 'Quem decidiu o racha',
-          description: 'Artilharia, assistências, card de Stories e resumo pro grupo.',
-        },
       };
+
   const intro = pageIntro[activeTab];
 
   return (
@@ -145,19 +194,29 @@ function RachaWorkspace({
         matchesCount={state.history.length}
         syncStatus={store.syncStatus}
         isMatchRunning={state.activeMatch.isRunning}
-        readOnly={readOnly}
+        role={role}
         isLoggedIn={isLoggedIn}
         onRetrySync={store.retrySync}
         onOpenRachas={onOpenRachas}
-        onCopyShareLink={readOnly ? undefined : () => void handleCopyShareLink()}
+        onCopyShareLink={isAdmin ? () => void handleCopyShareLink() : undefined}
         onOpenAuth={onOpenAuth}
         onBackToMyRachas={onBackToMyRachas}
       />
 
       <main className="mx-auto max-w-2xl px-4 pt-5 sm:px-6 sm:pt-7">
-        {store.authExpired && !readOnly && (
+        {import.meta.env.DEV && isAdmin && migrationNeeded && (
+          <div className="mb-4 rounded-2xl border border-[#FBBF24]/40 bg-[#FBBF24]/10 px-4 py-3 text-xs leading-relaxed text-[#FDE68A]">
+            Execute os scripts{' '}
+            <code className="font-mono font-bold text-[#BEF264]">supabase/members_sessions.sql</code>{' '}
+            e{' '}
+            <code className="font-mono font-bold text-[#BEF264]">supabase/security_hardening.sql</code>{' '}
+            no SQL Editor do Supabase.
+          </div>
+        )}
+
+        {anyAuthExpired && !isViewer && (
           <div className="mb-4 flex items-center justify-between gap-3 rounded-2xl border border-[#FBBF24]/40 bg-[#FBBF24]/10 px-4 py-3 text-xs text-[#FDE68A]">
-            <span>Sua sessão expirou e as alterações estão salvas só neste aparelho.</span>
+            <span>Sua sessão expirou. Entre novamente para continuar sincronizando.</span>
             {onSignOut && (
               <button
                 type="button"
@@ -170,7 +229,7 @@ function RachaWorkspace({
           </div>
         )}
 
-        {store.linkRevoked && readOnly && (
+        {store.linkRevoked && isViewer && (
           <div className="mb-4 rounded-2xl border border-[#FBBF24]/40 bg-[#FBBF24]/10 px-4 py-3 text-xs text-[#FDE68A]">
             Este link foi pausado ou alterado pelo organizador. Peça o novo link no grupo para
             continuar recebendo atualizações.
@@ -184,17 +243,33 @@ function RachaWorkspace({
             <p>{intro.description}</p>
           </section>
         )}
+
         <div key={activeTab} className="animate-tab-in">
           {activeTab === 'players' && (
             <PlayersTab
               players={state.players}
+              role={role}
               readOnly={readOnly}
+              members={membersState.members}
+              memberByPlayerId={membersState.memberByPlayerId}
+              playerEmails={membersState.playerEmails}
+              sessionsAvailable={sessionsState.available && membersState.available}
+              activeSession={sessionsState.activeSession}
+              sessionRsvps={sessionsState.rsvps}
+              myRsvp={sessionsState.myRsvp}
+              sessionSubmitting={sessionsState.submitting}
               onAddPlayer={store.addPlayer}
               onTogglePresence={store.togglePresence}
               onSetAllPresence={store.setAllPresence}
+              onApplyConfirmedToPresence={store.applyConfirmedToPresence}
               onUpdatePlayer={store.updatePlayer}
+              onSetPlayerEmail={isAdmin ? membersState.setPlayerEmail : undefined}
               onRemovePlayer={store.removePlayer}
               onLoadMockPlayers={store.loadMockPlayers}
+              onOpenMembersModal={perms.canLinkMembers ? () => setShowMembersModal(true) : undefined}
+              onCreateSession={sessionsState.createSession}
+              onSetSessionStatus={sessionsState.setSessionStatus}
+              onSetMyRsvp={sessionsState.setMyRsvp}
             />
           )}
 
@@ -244,10 +319,14 @@ function RachaWorkspace({
               allTimeStats={state.allTimeStats}
               archivedDays={state.archivedDays}
               archivedMatches={state.archivedMatches}
+              role={role}
               readOnly={readOnly}
+              myPlayerId={myPlayerId}
+              myConfirmedPresences={sessionsState.myConfirmedCount}
               onArchiveDay={store.archiveDay}
               onResetDay={store.resetDayStats}
               onResetAllTime={store.resetAllTimeStats}
+              onOpenLinkModal={isAdmin ? () => setShowMembersModal(true) : undefined}
             />
           )}
         </div>
@@ -258,6 +337,16 @@ function RachaWorkspace({
         onSelectTab={setActiveTab}
         isMatchRunning={state.activeMatch.isRunning}
       />
+
+      {isAdmin && showMembersModal && (
+        <MemberLinkModal
+          members={membersState.members}
+          players={state.players}
+          currentUserId={userId}
+          onLinkMember={membersState.linkMemberToPlayer}
+          onClose={() => setShowMembersModal(false)}
+        />
+      )}
     </div>
   );
 }
@@ -281,7 +370,7 @@ export function App() {
   const toast = useToast();
 
   const auth = useAuth();
-  const owned = useOwnedRachas(auth.user?.id ?? null);
+  const userRachas = useUserRachas(auth.user?.id ?? null);
   const shared = useSharedRacha(shareCode, auth.user?.id ?? null);
 
   useEffect(() => {
@@ -305,7 +394,7 @@ export function App() {
     setShareCode(null);
   };
 
-  // Fluxo de redefinição de senha (quando o usuário clica no link de recuperação por e-mail)
+  // Fluxo de redefinição de senha (obrigatório redefinir ou sair)
   if (auth.isPasswordRecovery && auth.user) {
     return (
       <ResetPasswordScreen
@@ -315,7 +404,6 @@ export function App() {
           if (!res.error) toast.show('Senha atualizada com sucesso!');
           return res;
         }}
-        onCancel={auth.cancelPasswordRecovery}
         onSignOut={() => void auth.signOut()}
       />
     );
@@ -337,7 +425,11 @@ export function App() {
 
   // Modo link compartilhado (?racha=<share_code>)
   if (shareCode) {
-    if (shared.loading || auth.loading) {
+    if (
+      shared.loading ||
+      auth.loading ||
+      (Boolean(auth.user) && userRachas.loading && userRachas.rachas.length === 0)
+    ) {
       return <FullscreenLoader label="Carregando racha..." />;
     }
 
@@ -379,54 +471,66 @@ export function App() {
       );
     }
 
-    const ownedMatch = owned.rachas.find((r) => r.id === shared.racha?.id);
+    const userMatch = userRachas.rachas.find((r) => r.id === shared.racha?.id);
     const isOwner = Boolean(
       auth.user &&
         (shared.racha.is_owner === true ||
-          Boolean(ownedMatch) ||
+          userMatch?.my_role === 'admin' ||
           (shared.racha.owner_id && auth.user.id === shared.racha.owner_id))
     );
-    const activeRacha = isOwner ? ownedMatch ?? shared.racha : shared.racha;
+    const isMember = Boolean(!isOwner && auth.user && userMatch?.my_role === 'member');
+    const resolvedRole: RachaRole = isOwner ? 'admin' : isMember ? 'member' : 'viewer';
+    const activeRacha = userMatch ?? shared.racha;
 
     return (
       <>
         <RachaWorkspace
-          key={activeRacha.id}
+          key={`${activeRacha.id}-${resolvedRole}`}
           racha={activeRacha}
-          readOnly={!isOwner}
+          role={resolvedRole}
+          userId={auth.user?.id ?? null}
           isLoggedIn={Boolean(auth.user)}
-          onOpenRachas={isOwner ? () => setShowRachasModal(true) : undefined}
+          migrationNeeded={userRachas.migrationNeeded}
+          onOpenRachas={
+            resolvedRole !== 'viewer' ? () => setShowRachasModal(true) : undefined
+          }
           onOpenAuth={() => setWantsAuth(true)}
           onBackToMyRachas={exitShareMode}
           onSignOut={() => void auth.signOut()}
         />
 
-        {isOwner && auth.user && showRachasModal && (
+        {resolvedRole !== 'viewer' && auth.user && showRachasModal && (
           <RachasModal
             userEmail={auth.user.email ?? ''}
-            rachas={owned.rachas}
+            rachas={userRachas.rachas}
             activeRachaId={activeRacha.id}
             onSelect={(id) => {
-              owned.selectRacha(id);
+              userRachas.selectRacha(id);
               exitShareMode();
             }}
             onCreate={async (name) => {
-              const res = await owned.createRacha(name);
+              const res = await userRachas.createRacha(name);
               if (res.racha) exitShareMode();
               return res;
             }}
-            onRename={owned.renameRacha}
-            onTogglePublic={owned.setRachaPublic}
+            onJoinByCode={async (code, displayName) => {
+              const res = await userRachas.joinByInviteCode(code, displayName);
+              if (!res.error) exitShareMode();
+              return res;
+            }}
+            onRename={userRachas.renameRacha}
+            onTogglePublic={userRachas.setRachaPublic}
             onRegenerateShareCode={async (id) => {
-              const res = await owned.regenerateShareCode(id);
+              const res = await userRachas.regenerateShareCode(id);
               if (res.shareCode && id === activeRacha.id) {
                 setShareCodeInUrl(res.shareCode);
                 setShareCode(res.shareCode);
               }
               return res;
             }}
+            onRegenerateInviteCode={userRachas.regenerateInviteCode}
             onDelete={async (id) => {
-              const res = await owned.deleteRacha(id);
+              const res = await userRachas.deleteRacha(id);
               if (!res.error && id === activeRacha.id) exitShareMode();
               return res;
             }}
@@ -455,11 +559,11 @@ export function App() {
     );
   }
 
-  if (owned.loading && owned.rachas.length === 0) {
+  if (userRachas.loading && userRachas.rachas.length === 0) {
     return <FullscreenLoader label="Carregando seus rachas..." />;
   }
 
-  if (owned.error && owned.rachas.length === 0) {
+  if (userRachas.error && userRachas.rachas.length === 0) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center px-4 text-center text-[#F4F7F2]">
         <div className="rp-card w-full max-w-md space-y-4 rounded-[28px] p-6">
@@ -470,17 +574,18 @@ export function App() {
             <h2 className="text-lg font-extrabold tracking-[-0.03em] text-[#F7FAEF]">
               Erro ao carregar seus rachas
             </h2>
-            <p className="mt-1 text-xs leading-relaxed text-[#879287]">{owned.error}</p>
-            <p className="mt-2 text-[11px] text-[#879287]">
-              Certifique-se de ter executado o script{' '}
-              <code className="font-mono text-[#BEF264]">supabase/auth_rachas.sql</code> no SQL
-              Editor do Supabase.
-            </p>
+            <p className="mt-1 text-xs leading-relaxed text-[#879287]">{userRachas.error}</p>
+            {import.meta.env.DEV && (
+              <p className="mt-2 text-[11px] text-[#879287]">
+                Verifique se os scripts em <code className="font-mono text-[#BEF264]">supabase/</code>{' '}
+                foram executados no SQL Editor do Supabase.
+              </p>
+            )}
           </div>
           <div className="grid grid-cols-2 gap-2">
             <button
               type="button"
-              onClick={() => void owned.reload()}
+              onClick={() => void userRachas.reload()}
               className="rp-btn-primary flex min-h-[44px] items-center justify-center gap-1.5 rounded-2xl text-xs"
             >
               <RefreshCw className="h-3.5 w-3.5" /> Tentar novamente
@@ -498,25 +603,34 @@ export function App() {
     );
   }
 
-  if (owned.rachas.length === 0) {
+  if (userRachas.rachas.length === 0) {
     return (
       <FirstRachaScreen
         userEmail={auth.user.email ?? ''}
-        onCreate={(name, initialData) => owned.createRacha(name, initialData)}
+        onCreate={(name, initialData) => userRachas.createRacha(name, initialData)}
+        onJoinByCode={(code, displayName) => userRachas.joinByInviteCode(code, displayName)}
         onSignOut={() => void auth.signOut()}
       />
     );
   }
 
-  const activeRacha = owned.selectedRacha ?? owned.rachas[0];
+  const activeRacha = userRachas.selectedRacha ?? userRachas.rachas[0];
+  const activeRole: RachaRole =
+    activeRacha.my_role === 'admin'
+      ? 'admin'
+      : activeRacha.my_role === 'member'
+      ? 'member'
+      : 'viewer';
 
   return (
     <>
       <RachaWorkspace
-        key={activeRacha.id}
+        key={`${activeRacha.id}-${activeRole}`}
         racha={activeRacha}
-        readOnly={false}
+        role={activeRole}
+        userId={auth.user.id}
         isLoggedIn={true}
+        migrationNeeded={userRachas.migrationNeeded}
         onOpenRachas={() => setShowRachasModal(true)}
         onSignOut={() => void auth.signOut()}
       />
@@ -524,14 +638,16 @@ export function App() {
       {showRachasModal && (
         <RachasModal
           userEmail={auth.user.email ?? ''}
-          rachas={owned.rachas}
+          rachas={userRachas.rachas}
           activeRachaId={activeRacha.id}
-          onSelect={owned.selectRacha}
-          onCreate={(name) => owned.createRacha(name)}
-          onRename={owned.renameRacha}
-          onTogglePublic={owned.setRachaPublic}
-          onRegenerateShareCode={owned.regenerateShareCode}
-          onDelete={owned.deleteRacha}
+          onSelect={userRachas.selectRacha}
+          onCreate={(name) => userRachas.createRacha(name)}
+          onJoinByCode={(code, displayName) => userRachas.joinByInviteCode(code, displayName)}
+          onRename={userRachas.renameRacha}
+          onTogglePublic={userRachas.setRachaPublic}
+          onRegenerateShareCode={userRachas.regenerateShareCode}
+          onRegenerateInviteCode={userRachas.regenerateInviteCode}
+          onDelete={userRachas.deleteRacha}
           onSignOut={() => void auth.signOut()}
           onClose={() => setShowRachasModal(false)}
         />

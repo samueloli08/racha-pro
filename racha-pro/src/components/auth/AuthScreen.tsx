@@ -79,7 +79,11 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
       const res = await onResetPassword(email);
       setSubmitting(false);
       if (res.error) setError(res.error);
-      else setNotice('Enviamos um link de redefinição para o seu e-mail.');
+      else {
+        setNotice(
+          'Se este e-mail estiver cadastrado, enviaremos um link de redefinição para sua caixa de entrada.'
+        );
+      }
       return;
     }
 
@@ -142,11 +146,17 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
         <div className="rp-card rounded-[28px] p-5 sm:p-6">
           {!isConfigured ? (
             <div className="space-y-2 rounded-2xl border border-[#F87171]/35 bg-[#F87171]/10 p-4 text-xs text-[#FCA5A5]">
-              <p className="font-bold text-[#F4F7F2]">Supabase não configurado</p>
+              <p className="font-bold text-[#F4F7F2]">Serviço indisponível</p>
               <p>
-                Defina <code className="font-mono">VITE_SUPABASE_URL</code> e{' '}
-                <code className="font-mono">VITE_SUPABASE_ANON_KEY</code> no arquivo{' '}
-                <code className="font-mono">.env</code> para usar contas e sincronização.
+                {import.meta.env.DEV ? (
+                  <>
+                    Defina <code className="font-mono">VITE_SUPABASE_URL</code> e{' '}
+                    <code className="font-mono">VITE_SUPABASE_ANON_KEY</code> no arquivo{' '}
+                    <code className="font-mono">.env</code> para usar contas e sincronização.
+                  </>
+                ) : (
+                  'O serviço de autenticação não está disponível no momento. Tente novamente mais tarde.'
+                )}
               </p>
             </div>
           ) : (
@@ -201,6 +211,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
                       onChange={(e) => setEmail(e.target.value)}
                       autoComplete="email"
                       placeholder="voce@exemplo.com"
+                      maxLength={254}
                       required
                       className="rp-input w-full rounded-2xl pl-10 pr-3.5 text-base"
                     />
@@ -222,6 +233,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
                         placeholder={mode === 'signup' ? 'Mínimo 8 caracteres' : 'Sua senha'}
                         required
                         minLength={mode === 'signup' ? 8 : 6}
+                        maxLength={128}
                         className="rp-input w-full rounded-2xl pl-10 pr-12 text-base"
                       />
                       <button
@@ -251,6 +263,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
                         placeholder="Repita sua senha"
                         required
                         minLength={8}
+                        maxLength={128}
                         className="rp-input w-full rounded-2xl pl-10 pr-3.5 text-base"
                       />
                     </div>
@@ -319,6 +332,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
                   value={shareInput}
                   onChange={(e) => setShareInput(e.target.value)}
                   placeholder="Ex: a7k2m9p4x1q8 ou cole o link"
+                  maxLength={256}
                   autoFocus
                   className="rp-input min-w-0 flex-1 rounded-xl px-3 text-sm"
                 />

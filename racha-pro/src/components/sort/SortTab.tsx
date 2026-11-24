@@ -146,11 +146,12 @@ export const SortTab: React.FC<SortTabProps> = ({
   const handleNewLate = (e: React.FormEvent) => {
     e.preventDefault();
     const target = teams.find((t) => t.id === (lateTeamId || lastTeam?.id));
-    if (!target || !lateName.trim()) return;
-    const newId = onAddPlayer(lateName, false, 3);
+    const cleaned = lateName.trim().slice(0, 60);
+    if (!target || !cleaned) return;
+    const newId = onAddPlayer(cleaned, false, 3);
     if (!newId) return;
     onAddPlayerToTeam(newId, target.id);
-    toast.show(`${lateName.trim()} entrou no ${target.name}`);
+    toast.show(`${cleaned} entrou no ${target.name}`);
     setLateName('');
   };
 
@@ -513,6 +514,7 @@ export const SortTab: React.FC<SortTabProps> = ({
                     type="text"
                     value={lateName}
                     onChange={(e) => setLateName(e.target.value)}
+                    maxLength={60}
                     placeholder="Nome do jogador..."
                     className="rp-input min-w-0 flex-1 rounded-xl px-3.5 text-sm"
                   />

@@ -1,4 +1,4 @@
-/** Copia texto para a área de transferência com fallback para navegadores restritivos. */
+/** Copia texto para a área de transferência com fallback seguro para navegadores restritivos. */
 export async function copyText(text: string): Promise<boolean> {
   try {
     if (navigator.clipboard && window.isSecureContext) {
@@ -9,18 +9,21 @@ export async function copyText(text: string): Promise<boolean> {
     // tenta o fallback abaixo
   }
 
+  let area: HTMLTextAreaElement | null = null;
   try {
-    const area = document.createElement('textarea');
+    area = document.createElement('textarea');
     area.value = text;
     area.setAttribute('readonly', '');
     area.style.position = 'fixed';
     area.style.opacity = '0';
     document.body.appendChild(area);
     area.select();
-    const ok = document.execCommand('copy');
-    document.body.removeChild(area);
-    return ok;
+    return document.execCommand('copy');
   } catch {
     return false;
+  } finally {
+    if (area && area.parentNode) {
+      area.parentNode.removeChild(area);
+    }
   }
 }
