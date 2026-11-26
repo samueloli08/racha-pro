@@ -1,10 +1,12 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { flushSync } from 'react-dom';
 import { AlertCircle, Loader2, LogOut, RefreshCw } from 'lucide-react';
 import { AuthScreen } from './components/auth/AuthScreen';
 import { FirstRachaScreen } from './components/auth/FirstRachaScreen';
 import { RachasModal } from './components/auth/RachasModal';
 import { ResetPasswordScreen } from './components/auth/ResetPasswordScreen';
 import { BottomNav } from './components/layout/BottomNav';
+import { DesktopSidebar } from './components/layout/DesktopSidebar';
 import { Header } from './components/layout/Header';
 import { MatchTab } from './components/match/MatchTab';
 import { MemberLinkModal } from './components/players/MemberLinkModal';
@@ -41,6 +43,10 @@ interface RachaWorkspaceProps {
   onSignOut?: () => void;
 }
 
+type DocumentWithVT = Document & {
+  startViewTransition?: (cb: () => void) => unknown;
+};
+
 function RachaWorkspace({
   racha,
   role,
@@ -58,7 +64,35 @@ function RachaWorkspace({
 
   const [activeTab, setActiveTab] = useState<TabId>(isViewer ? 'match' : 'players');
   const [showMembersModal, setShowMembersModal] = useState(false);
+  const [animateStageFallback, setAnimateStageFallback] = useState(true);
   const toast = useToast();
+
+  const switchTab = useCallback(
+    (nextTab: TabId) => {
+      if (nextTab === activeTab) return;
+      const doc = document as DocumentWithVT;
+      const reducedMotion =
+        typeof window !== 'undefined' &&
+        window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+
+      if (typeof doc.startViewTransition === 'function' && !reducedMotion) {
+        try {
+          doc.startViewTransition(() => {
+            flushSync(() => {
+              setAnimateStageFallback(false);
+              setActiveTab(nextTab);
+            });
+          });
+          return;
+        } catch {
+          // Fallback suave caso o navegador cancele a transição
+        }
+      }
+      setAnimateStageFallback(true);
+      setActiveTab(nextTab);
+    },
+    [activeTab]
+  );
 
   const store = useRachaStore({
     rachaId: racha.id,
@@ -113,6 +147,10 @@ function RachaWorkspace({
   };
 
   const presentCount = state.players.filter((p) => p.present).length;
+  const totalGoalsToday =
+    state.history.reduce((sum, m) => sum + m.scoreA + m.scoreB, 0) +
+    state.activeMatch.scoreA +
+    state.activeMatch.scoreB;
   const sortLabel = state.settings.sortMode === 'balanced' ? 'EQUILIBRADO' : 'ALEATÓRIO';
 
   const pageIntro: Record<TabId, { eyebrow: string; title: string; description: string }> = isAdmin
@@ -187,7 +225,25 @@ function RachaWorkspace({
   const intro = pageIntro[activeTab];
 
   return (
-    <div className="min-h-screen overflow-x-hidden pb-24 text-[#F4F7F2]">
+    <div className="min-h-screen overflow-x-clip text-[#0D1510] lg:pl-[268px]">
+      <DesktopSidebar
+        rachaName={racha.name}
+        presentCount={presentCount}
+        matchesCount={state.history.length}
+        teamsCount={state.teams.length}
+        activeTab={activeTab}
+        onSelectTab={switchTab}
+        syncStatus={store.syncStatus}
+        isMatchRunning={state.activeMatch.isRunning}
+        role={role}
+        isLoggedIn={isLoggedIn}
+        onRetrySync={store.retrySync}
+        onOpenRachas={onOpenRachas}
+        onCopyShareLink={isAdmin ? () => void handleCopyShareLink() : undefined}
+        onOpenAuth={onOpenAuth}
+        onBackToMyRachas={onBackToMyRachas}
+      />
+
       <Header
         rachaName={racha.name}
         presentCount={presentCount}
@@ -203,25 +259,25 @@ function RachaWorkspace({
         onBackToMyRachas={onBackToMyRachas}
       />
 
-      <main className="mx-auto max-w-2xl px-4 pt-5 sm:px-6 sm:pt-7">
+      <main className="mx-auto w-full max-w-[1440px] px-4 pt-5 sm:px-6 lg:px-10 lg:pt-8">
         {import.meta.env.DEV && isAdmin && migrationNeeded && (
-          <div className="mb-4 rounded-2xl border border-[#FBBF24]/40 bg-[#FBBF24]/10 px-4 py-3 text-xs leading-relaxed text-[#FDE68A]">
+          <div className="mb-5 rounded-2xl border border-[#D97706]/30 bg-[#FEF3C7] px-4 py-3 text-xs leading-relaxed text-[#92400E]">
             Execute os scripts{' '}
-            <code className="font-mono font-bold text-[#BEF264]">supabase/members_sessions.sql</code>{' '}
+            <code className="font-mono font-bold text-[#365314]">supabase/members_sessions.sql</code>{' '}
             e{' '}
-            <code className="font-mono font-bold text-[#BEF264]">supabase/security_hardening.sql</code>{' '}
+            <code className="font-mono font-bold text-[#365314]">supabase/security_hardening.sql</code>{' '}
             no SQL Editor do Supabase.
           </div>
         )}
 
         {anyAuthExpired && !isViewer && (
-          <div className="mb-4 flex items-center justify-between gap-3 rounded-2xl border border-[#FBBF24]/40 bg-[#FBBF24]/10 px-4 py-3 text-xs text-[#FDE68A]">
+          <div className="mb-5 flex items-center justify-between gap-3 rounded-2xl border border-[#D97706]/30 bg-[#FEF3C7] px-4 py-3 text-xs font-medium text-[#92400E]">
             <span>Sua sessão expirou. Entre novamente para continuar sincronizando.</span>
             {onSignOut && (
               <button
                 type="button"
                 onClick={onSignOut}
-                className="min-h-[40px] shrink-0 rounded-xl bg-[#FBBF24] px-3 text-xs font-extrabold text-[#1A1405]"
+                className="min-h-[40px] shrink-0 rounded-xl bg-[#B45309] px-3.5 text-xs font-extrabold text-white"
               >
                 Entrar de novo
               </button>
@@ -230,21 +286,53 @@ function RachaWorkspace({
         )}
 
         {store.linkRevoked && isViewer && (
-          <div className="mb-4 rounded-2xl border border-[#FBBF24]/40 bg-[#FBBF24]/10 px-4 py-3 text-xs text-[#FDE68A]">
+          <div className="mb-5 rounded-2xl border border-[#D97706]/30 bg-[#FEF3C7] px-4 py-3 text-xs font-medium text-[#92400E]">
             Este link foi pausado ou alterado pelo organizador. Peça o novo link no grupo para
             continuar recebendo atualizações.
           </div>
         )}
 
         {activeTab !== 'match' && (
-          <section className="page-intro">
-            <p className="page-eyebrow">{intro.eyebrow}</p>
-            <h2>{intro.title}</h2>
-            <p>{intro.description}</p>
+          <section className="page-intro flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+            <div>
+              <p className="page-eyebrow">{intro.eyebrow}</p>
+              <h1>{intro.title}</h1>
+              <p>{intro.description}</p>
+            </div>
+
+            <div className="hidden items-center gap-2.5 md:flex">
+              <div className="rp-surface flex items-center gap-2.5 rounded-2xl px-4 py-2.5">
+                <span className="font-mono text-lg font-extrabold tabular-nums text-[#0D1510]">
+                  {presentCount}
+                </span>
+                <span className="font-mono text-[10px] font-bold uppercase tracking-[0.08em] text-[#647468]">
+                  Presentes
+                </span>
+              </div>
+              <div className="rp-surface flex items-center gap-2.5 rounded-2xl px-4 py-2.5">
+                <span className="font-mono text-lg font-extrabold tabular-nums text-[#0D1510]">
+                  {state.teams.length}
+                </span>
+                <span className="font-mono text-[10px] font-bold uppercase tracking-[0.08em] text-[#647468]">
+                  Times
+                </span>
+              </div>
+              <div className="rp-surface flex items-center gap-2.5 rounded-2xl px-4 py-2.5">
+                <span className="font-mono text-lg font-extrabold tabular-nums text-[#3F6212]">
+                  {totalGoalsToday}
+                </span>
+                <span className="font-mono text-[10px] font-bold uppercase tracking-[0.08em] text-[#647468]">
+                  Gols hoje
+                </span>
+              </div>
+            </div>
           </section>
         )}
 
-        <div key={activeTab} className="animate-tab-in">
+        <div
+          key={activeTab}
+          className={`rp-stage ${animateStageFallback ? 'animate-tab-in' : ''}`}
+        >
           {activeTab === 'players' && (
             <PlayersTab
               players={state.players}
@@ -287,7 +375,7 @@ function RachaWorkspace({
               onSetTeamColor={store.setTeamColor}
               onAddPlayer={store.addPlayer}
               onAddPlayerToTeam={store.addPlayerToTeam}
-              onGoToMatch={() => setActiveTab('match')}
+              onGoToMatch={() => switchTab('match')}
             />
           )}
 
@@ -307,7 +395,7 @@ function RachaWorkspace({
               onRegisterGoal={store.registerGoal}
               onRemoveEvent={store.removeGoalEvent}
               onFinishMatch={store.finishMatchAndRotate}
-              onGoToSort={() => setActiveTab('sort')}
+              onGoToSort={() => switchTab('sort')}
             />
           )}
 
@@ -334,7 +422,7 @@ function RachaWorkspace({
 
       <BottomNav
         activeTab={activeTab}
-        onSelectTab={setActiveTab}
+        onSelectTab={switchTab}
         isMatchRunning={state.activeMatch.isRunning}
       />
 
@@ -353,10 +441,10 @@ function RachaWorkspace({
 
 function FullscreenLoader({ label }: { label: string }) {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center gap-4 px-4 text-center text-[#C9D3C4]">
+    <div className="flex min-h-screen flex-col items-center justify-center gap-4 px-4 text-center text-[#0D1510]">
       <BrandMark size="lg" />
-      <div className="flex items-center gap-2 font-mono text-xs font-bold tracking-[0.04em] text-[#879287]">
-        <Loader2 className="h-4 w-4 animate-spin text-[#BEF264]" />
+      <div className="flex items-center gap-2 font-mono text-xs font-bold tracking-[0.04em] text-[#647468]">
+        <Loader2 className="h-4 w-4 animate-spin text-[#4D7C0F]" />
         <span>{label}</span>
       </div>
     </div>
@@ -435,16 +523,16 @@ export function App() {
 
     if (shared.notFound || shared.error || !shared.racha) {
       return (
-        <div className="flex min-h-screen flex-col items-center justify-center px-4 text-center text-[#F4F7F2]">
+        <div className="flex min-h-screen flex-col items-center justify-center px-4 text-center text-[#0D1510]">
           <div className="rp-card w-full max-w-sm space-y-4 rounded-[28px] p-6">
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[#F87171]/15 text-[#F87171]">
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[#FEE2E2] text-[#DC2626]">
               <AlertCircle className="h-6 w-6" />
             </div>
             <div>
-              <h2 className="text-lg font-extrabold tracking-[-0.03em] text-[#F7FAEF]">
+              <h2 className="text-lg font-extrabold tracking-[-0.03em] text-[#0D1510]">
                 {shared.notFound ? 'Racha não encontrado' : 'Erro ao abrir o racha'}
               </h2>
-              <p className="mt-1 text-xs leading-relaxed text-[#879287]">
+              <p className="mt-1 text-xs leading-relaxed text-[#647468]">
                 {shared.notFound
                   ? 'Verifique se o link está completo ou se o organizador pausou o compartilhamento.'
                   : shared.error || 'Não foi possível carregar este racha agora.'}
@@ -565,19 +653,19 @@ export function App() {
 
   if (userRachas.error && userRachas.rachas.length === 0) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center px-4 text-center text-[#F4F7F2]">
+      <div className="flex min-h-screen flex-col items-center justify-center px-4 text-center text-[#0D1510]">
         <div className="rp-card w-full max-w-md space-y-4 rounded-[28px] p-6">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[#F87171]/15 text-[#F87171]">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[#FEE2E2] text-[#DC2626]">
             <AlertCircle className="h-6 w-6" />
           </div>
           <div>
-            <h2 className="text-lg font-extrabold tracking-[-0.03em] text-[#F7FAEF]">
+            <h2 className="text-lg font-extrabold tracking-[-0.03em] text-[#0D1510]">
               Erro ao carregar seus rachas
             </h2>
-            <p className="mt-1 text-xs leading-relaxed text-[#879287]">{userRachas.error}</p>
+            <p className="mt-1 text-xs leading-relaxed text-[#647468]">{userRachas.error}</p>
             {import.meta.env.DEV && (
-              <p className="mt-2 text-[11px] text-[#879287]">
-                Verifique se os scripts em <code className="font-mono text-[#BEF264]">supabase/</code>{' '}
+              <p className="mt-2 text-[11px] text-[#647468]">
+                Verifique se os scripts em <code className="font-mono font-bold text-[#365314]">supabase/</code>{' '}
                 foram executados no SQL Editor do Supabase.
               </p>
             )}

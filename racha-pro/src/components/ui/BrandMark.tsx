@@ -43,30 +43,37 @@ export const BrandMark: React.FC<BrandMarkProps> = ({ size = 'md', className = '
 };
 
 interface BrandLockupProps {
-  size?: 'md' | 'lg';
+  size?: 'sm' | 'md' | 'lg';
   showTagline?: boolean;
+  align?: 'center' | 'left';
 }
 
 export const BrandLockup: React.FC<BrandLockupProps> = ({
   size = 'lg',
   showTagline = false,
+  align = 'center',
 }) => {
   const isLg = size === 'lg';
+  const isSm = size === 'sm';
   return (
-    <div className="flex flex-col items-center text-center">
-      <div className="flex items-center gap-3">
-        <BrandMark size={isLg ? 'lg' : 'md'} />
-        <div className="flex items-start gap-2">
+    <div
+      className={`flex flex-col ${
+        align === 'left' ? 'items-start text-left' : 'items-center text-center'
+      }`}
+    >
+      <div className={`flex items-center ${isSm ? 'gap-2.5' : 'gap-3'}`}>
+        <BrandMark size={isLg ? 'lg' : isSm ? 'sm' : 'md'} />
+        <div className="flex items-start gap-1.5">
           <span
-            className={`font-extrabold leading-none tracking-[-0.065em] text-[#F7FAEF] ${
-              isLg ? 'text-[44px] sm:text-[52px]' : 'text-[28px]'
+            className={`font-extrabold leading-none tracking-[-0.065em] text-[#0D1510] ${
+              isLg ? 'text-[44px] sm:text-[54px]' : isSm ? 'text-[24px]' : 'text-[30px]'
             }`}
           >
             racha
           </span>
           <span
             className={`brand-badge ${
-              isLg ? 'mt-1 px-2 py-1 text-[13px]' : 'mt-0.5 text-[11px]'
+              isLg ? 'mt-1 px-2 py-1 text-[13px]' : isSm ? 'mt-0.5 text-[10px]' : 'mt-0.5 text-[11px]'
             }`}
           >
             PRO
@@ -74,7 +81,7 @@ export const BrandLockup: React.FC<BrandLockupProps> = ({
         </div>
       </div>
       {showTagline && (
-        <p className="mt-3 text-sm font-medium tracking-[-0.01em] text-[#879287]">
+        <p className="mt-3 text-sm font-medium tracking-[-0.01em] text-[#5B6B5F]">
           O placar da sua pelada.
         </p>
       )}

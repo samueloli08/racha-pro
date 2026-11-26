@@ -20,9 +20,9 @@ export function useToast(): ToastApi {
 }
 
 const ICONS: Record<ToastKind, React.ReactNode> = {
-  success: <CheckCircle2 className="h-4 w-4 shrink-0 text-[#BEF264]" />,
-  info: <Info className="h-4 w-4 shrink-0 text-[#60A5FA]" />,
-  error: <AlertCircle className="h-4 w-4 shrink-0 text-[#F87171]" />,
+  success: <CheckCircle2 className="h-4 w-4 shrink-0 text-[#4D7C0F]" />,
+  info: <Info className="h-4 w-4 shrink-0 text-blue-600" />,
+  error: <AlertCircle className="h-4 w-4 shrink-0 text-red-600" />,
 };
 
 export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -44,14 +44,14 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     <ToastContext.Provider value={api}>
       {children}
       <div
-        className="pointer-events-none fixed inset-x-0 bottom-24 z-[60] flex flex-col items-center gap-2 px-4"
+        className="pointer-events-none fixed inset-x-0 bottom-24 z-[60] flex flex-col items-center gap-2 px-4 lg:bottom-8"
         role="status"
         aria-live="polite"
       >
         {items.map((t) => (
           <div
             key={t.id}
-            className="flex max-w-sm animate-toast-in items-center gap-2.5 rounded-2xl border border-[#BEF264]/20 bg-[#111713]/95 px-4 py-3 text-xs font-bold text-[#F4F7F2] shadow-2xl shadow-black/50 backdrop-blur-xl"
+            className="flex max-w-md animate-toast-in items-center gap-2.5 rounded-2xl border border-[#0D1510]/10 bg-white/95 px-4 py-3 text-xs font-bold text-[#0D1510] shadow-2xl shadow-[#0D1510]/15 backdrop-blur-xl"
           >
             {ICONS[t.kind]}
             <span>{t.message}</span>

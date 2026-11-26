@@ -67,27 +67,27 @@ function formatLongPtDate(date: Date): string {
 function RankBadge({ index }: { index: number }) {
   if (index === 0) {
     return (
-      <span className="inline-flex h-6 w-6 items-center justify-center rounded-lg bg-gradient-to-b from-[#FDE68A] to-[#FBBF24] font-mono text-[11px] font-extrabold text-[#1A1405]">
+      <span className="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-b from-[#FDE68A] to-[#F59E0B] font-mono text-[11px] font-extrabold text-[#1A1405] shadow-sm">
         1
       </span>
     );
   }
   if (index === 1) {
     return (
-      <span className="inline-flex h-6 w-6 items-center justify-center rounded-lg bg-gradient-to-b from-[#E4E4E7] to-[#A1A1AA] font-mono text-[11px] font-extrabold text-[#0B100D]">
+      <span className="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-b from-[#E2E8F0] to-[#94A3B8] font-mono text-[11px] font-extrabold text-[#0F172A]">
         2
       </span>
     );
   }
   if (index === 2) {
     return (
-      <span className="inline-flex h-6 w-6 items-center justify-center rounded-lg bg-gradient-to-b from-[#F59E0B] to-[#B45309] font-mono text-[11px] font-extrabold text-[#1A0F02]">
+      <span className="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-b from-[#EA580C] to-[#9A3412] font-mono text-[11px] font-extrabold text-white shadow-sm">
         3
       </span>
     );
   }
   return (
-    <span className="inline-flex h-6 w-6 items-center justify-center font-mono text-[11px] font-bold text-[#879287]">
+    <span className="inline-flex h-7 w-7 items-center justify-center font-mono text-[11px] font-bold text-[#647468]">
       {index + 1}
     </span>
   );
@@ -164,7 +164,12 @@ export const StatsTab: React.FC<StatsTabProps> = ({
       totalGoals,
       podium: rows.slice(0, 3),
       topScorer: byGoals
-        ? { name: byGoals.name, goals: byGoals.goals, assists: byGoals.assists, total: byGoals.total }
+        ? {
+            name: byGoals.name,
+            goals: byGoals.goals,
+            assists: byGoals.assists,
+            total: byGoals.total,
+          }
         : null,
       topAssist: byAssists
         ? {
@@ -225,48 +230,37 @@ export const StatsTab: React.FC<StatsTabProps> = ({
   ];
 
   return (
-    <div className="space-y-4">
-      {/* Seletor de Visão */}
-      <div
-        className={`rp-surface grid gap-1.5 rounded-[20px] p-1.5 ${
-          showMineTab ? 'grid-cols-3' : 'grid-cols-2'
-        }`}
-      >
-        {scopeOptions.map((s) => (
-          <button
-            key={s.id}
-            type="button"
-            onClick={() => setScope(s.id)}
-            className={`flex min-h-[44px] items-center justify-center gap-1.5 rounded-[14px] px-2 text-xs font-extrabold transition ${
-              scope === s.id ? 'rp-btn-primary' : 'text-[#879287] hover:text-[#F4F7F2]'
-            }`}
-          >
-            {s.icon}
-            <span className="truncate">{s.label}</span>
-          </button>
-        ))}
-      </div>
+    <div className="space-y-5">
+      {/* Barra superior: Seletor de Visão + Ações de compartilhamento lado a lado no desktop */}
+      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <div
+          className={`rp-surface grid gap-1.5 rounded-[20px] p-1.5 md:w-[380px] ${
+            showMineTab ? 'grid-cols-3' : 'grid-cols-2'
+          }`}
+        >
+          {scopeOptions.map((s) => (
+            <button
+              key={s.id}
+              type="button"
+              onClick={() => setScope(s.id)}
+              className={`flex min-h-[42px] items-center justify-center gap-1.5 rounded-[14px] px-3 text-xs font-extrabold transition ${
+                scope === s.id
+                  ? 'rp-btn-primary'
+                  : 'text-[#647468] hover:bg-[#F6F9F2] hover:text-[#0D1510]'
+              }`}
+            >
+              {s.icon}
+              <span className="truncate">{s.label}</span>
+            </button>
+          ))}
+        </div>
 
-      {isMine ? (
-        <MyStatsSection
-          stats={personalStats}
-          isAdmin={isAdmin}
-          onOpenLinkModal={onOpenLinkModal}
-        />
-      ) : (
-        <>
-          {!isToday && (
-            <p className="text-center font-mono text-[11px] font-bold uppercase tracking-[0.08em] text-[#879287]">
-              {archivedDays} racha(s) arquivado(s) · {archivedMatches} partida(s)
-            </p>
-          )}
-
-          {/* Ações de Compartilhamento */}
-          <div className="grid grid-cols-2 gap-2.5">
+        {!isMine && (
+          <div className="grid grid-cols-2 gap-2.5 md:flex md:items-center">
             <button
               type="button"
               onClick={handleCopyWhatsApp}
-              className="rp-btn-primary flex min-h-[50px] items-center justify-center gap-2 rounded-[18px] px-3 text-xs"
+              className="rp-btn-primary flex min-h-[46px] items-center justify-center gap-2 rounded-[16px] px-4 text-xs"
             >
               {copied ? (
                 <>
@@ -281,198 +275,235 @@ export const StatsTab: React.FC<StatsTabProps> = ({
             <button
               type="button"
               onClick={() => setShowCard(true)}
-              className="flex min-h-[50px] items-center justify-center gap-2 rounded-[18px] border border-[#BEF264]/35 bg-[#84CC16]/10 px-3 text-xs font-extrabold text-[#D9F99D] transition hover:bg-[#84CC16]/18"
+              className="rp-btn-secondary flex min-h-[46px] items-center justify-center gap-2 rounded-[16px] px-4 text-xs"
             >
-              <ImageIcon className="h-4 w-4" /> Card de Stories
+              <ImageIcon className="h-4 w-4 text-[#3F6212]" /> Card de Stories
             </button>
           </div>
+        )}
+      </div>
 
-          {/* Ranking Principal */}
-          <div className="rp-card rounded-[24px] p-4">
-            <div className="mb-3 flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
-                <Trophy className="h-4 w-4 text-[#FBBF24]" />
-                <h3 className="font-mono text-[11px] font-extrabold uppercase tracking-[0.14em] text-[#C9D3C4]">
-                  {activeTitle} · {isToday ? 'Hoje' : 'Histórico'}
-                </h3>
-              </div>
-              <span className="font-mono text-[11px] font-bold text-[#879287] tabular-nums">
-                {totalGoals} gols
-              </span>
-            </div>
-
-            <div className="mb-3 grid grid-cols-4 gap-1.5">
-              {RANKING_TABS.map((t) => {
-                const active = tab === t.id;
-                return (
-                  <button
-                    key={t.id}
-                    type="button"
-                    onClick={() => setTab(t.id)}
-                    className={`min-h-[40px] rounded-xl border text-[11px] font-bold transition ${
-                      active
-                        ? 'border-[#BEF264]/45 bg-[#84CC16]/15 text-[#D9F99D]'
-                        : 'border-white/[0.085] bg-[#0B100D] text-[#879287] hover:text-[#C9D3C4]'
-                    }`}
-                  >
-                    {t.label}
-                  </button>
-                );
-              })}
-            </div>
-
-            {ranking.length === 0 ? (
-              <p className="py-5 text-center text-xs text-[#879287]">
-                {isToday
-                  ? 'Nada registrado nas partidas encerradas ainda.'
-                  : 'Nada arquivado ainda. Use "Encerrar dia e arquivar" ao final da pelada.'}
-              </p>
-            ) : (
-              <div className="w-full">
-                <div className="grid grid-cols-[2rem_minmax(0,1fr)_2rem_2rem_2rem_2.75rem] items-center gap-x-1 border-b border-white/[0.085] pb-2 font-mono text-[10px] font-extrabold uppercase tracking-[0.08em] text-[#879287]">
-                  <span />
-                  <span>Jogador</span>
-                  <span className="text-center">G</span>
-                  <span className="text-center">A</span>
-                  <span className="text-center">V</span>
-                  <span className="text-right text-[#BEF264]">
-                    {tab === 'general'
-                      ? 'G+A'
-                      : tab === 'goals'
-                      ? 'Gols'
-                      : tab === 'assists'
-                      ? 'Ast'
-                      : 'Vit'}
-                  </span>
+      {isMine ? (
+        <MyStatsSection
+          stats={personalStats}
+          isAdmin={isAdmin}
+          onOpenLinkModal={onOpenLinkModal}
+        />
+      ) : (
+        <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-12">
+          {/* Coluna Esquerda (7 cols): Ranking Completo */}
+          <div className="space-y-4 lg:col-span-7">
+            <div className="rp-card rp-stagger rounded-[26px] p-5">
+              <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#FEF3C7] text-[#D97706]">
+                    <Trophy className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-extrabold tracking-[-0.03em] text-[#0D1510]">
+                      {activeTitle} · {isToday ? 'Hoje' : 'Histórico'}
+                    </h3>
+                    {!isToday && (
+                      <p className="font-mono text-[10px] font-bold uppercase tracking-[0.06em] text-[#647468]">
+                        {archivedDays} racha(s) · {archivedMatches} partida(s)
+                      </p>
+                    )}
+                  </div>
                 </div>
-                <div className="divide-y divide-white/[0.05]">
-                  {ranking.map((row, idx) => (
-                    <div
-                      key={row.id}
-                      className="grid min-h-[46px] grid-cols-[2rem_minmax(0,1fr)_2rem_2rem_2rem_2.75rem] items-center gap-x-1 text-sm"
+                <span className="rounded-xl border border-[#84CC16]/40 bg-[#ECFCCB] px-2.5 py-1 font-mono text-xs font-extrabold text-[#365314] tabular-nums">
+                  {totalGoals} gols
+                </span>
+              </div>
+
+              <div className="mb-4 grid grid-cols-4 gap-1.5">
+                {RANKING_TABS.map((t) => {
+                  const active = tab === t.id;
+                  return (
+                    <button
+                      key={t.id}
+                      type="button"
+                      onClick={() => setTab(t.id)}
+                      className={`min-h-[40px] rounded-xl border text-xs font-bold transition ${
+                        active
+                          ? 'border-[#65A30D]/45 bg-[#ECFCCB] text-[#365314] shadow-sm'
+                          : 'border-[#0D1510]/[0.08] bg-[#F6F9F2] text-[#647468] hover:text-[#0D1510]'
+                      }`}
                     >
-                      <RankBadge index={idx} />
-                      <span className="truncate font-bold text-[#F4F7F2]">{row.name}</span>
-                      <span className="text-center font-mono text-xs text-[#C9D3C4] tabular-nums">
-                        {row.goals}
-                      </span>
-                      <span className="text-center font-mono text-xs text-[#C9D3C4] tabular-nums">
-                        {row.assists}
-                      </span>
-                      <span className="text-center font-mono text-xs text-[#C9D3C4] tabular-nums">
-                        {row.wins}
-                      </span>
-                      <span className="text-right font-mono text-sm font-extrabold text-[#BEF264] tabular-nums">
-                        {metricOf(row, tab)}
+                      {t.label}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {ranking.length === 0 ? (
+                <p className="rp-well rounded-2xl py-8 text-center text-xs font-medium text-[#647468]">
+                  {isToday
+                    ? 'Nada registrado nas partidas encerradas ainda.'
+                    : 'Nada arquivado ainda. Use "Encerrar dia e arquivar" ao final da pelada.'}
+                </p>
+              ) : (
+                <div className="w-full">
+                  <div className="grid grid-cols-[1.85rem_minmax(0,1fr)_1.75rem_1.75rem_1.75rem_2.5rem] items-center gap-x-1 border-b border-[#0D1510]/10 pb-2.5 font-mono text-[10px] font-extrabold uppercase tracking-[0.08em] text-[#647468] sm:grid-cols-[2.25rem_minmax(0,1fr)_2.25rem_2.25rem_2.25rem_3.25rem]">
+                    <span />
+                    <span>Jogador</span>
+                    <span className="text-center">G</span>
+                    <span className="text-center">A</span>
+                    <span className="text-center">V</span>
+                    <span className="text-right text-[#3F6212]">
+                      {tab === 'general'
+                        ? 'G+A'
+                        : tab === 'goals'
+                        ? 'Gols'
+                        : tab === 'assists'
+                        ? 'Ast'
+                        : 'Vit'}
+                    </span>
+                  </div>
+                  <div className="divide-y divide-[#0D1510]/[0.06]">
+                    {ranking.map((row, idx) => (
+                      <div
+                        key={row.id}
+                        className="grid min-h-[50px] grid-cols-[1.85rem_minmax(0,1fr)_1.75rem_1.75rem_1.75rem_2.5rem] items-center gap-x-1 rounded-xl px-1 text-sm transition hover:bg-[#F6F9F2] sm:grid-cols-[2.25rem_minmax(0,1fr)_2.25rem_2.25rem_2.25rem_3.25rem]"
+                      >
+                        <RankBadge index={idx} />
+                        <span className="truncate font-extrabold text-[#0D1510]">{row.name}</span>
+                        <span className="text-center font-mono text-xs font-semibold text-[#46544A] tabular-nums">
+                          {row.goals}
+                        </span>
+                        <span className="text-center font-mono text-xs font-semibold text-[#46544A] tabular-nums">
+                          {row.assists}
+                        </span>
+                        <span className="text-center font-mono text-xs font-semibold text-[#46544A] tabular-nums">
+                          {row.wins}
+                        </span>
+                        <span className="text-right font-mono text-sm font-extrabold text-[#3F6212] tabular-nums">
+                          {metricOf(row, tab)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {!hasData && isToday && (
+              <p className="text-center text-xs font-medium text-[#647468]">
+                Jogue e encerre partidas para ver os números aqui.
+              </p>
+            )}
+          </div>
+
+          {/* Coluna Direita (5 cols): Goleiros + Partidas de hoje + Arquivamento */}
+          <div className="space-y-4 lg:sticky lg:top-8 lg:col-span-5">
+            {goalkeepers.length > 0 && (
+              <div
+                className="rp-card rp-stagger rounded-[26px] p-5"
+                style={{ '--stagger': 1 } as React.CSSProperties}
+              >
+                <h3 className="mb-3 flex items-center gap-2 font-mono text-[11px] font-extrabold uppercase tracking-[0.14em] text-[#3F6212]">
+                  <Shield className="h-4 w-4 text-[#D97706]" />
+                  Goleiros · Jogos sem sofrer gol
+                </h3>
+                <div className="divide-y divide-[#0D1510]/[0.06]">
+                  {goalkeepers.map((gk) => (
+                    <div
+                      key={gk.id}
+                      className="flex min-h-[46px] items-center justify-between gap-2 text-sm"
+                    >
+                      <span className="min-w-0 truncate font-bold text-[#0D1510]">{gk.name}</span>
+                      <span className="shrink-0 font-mono text-xs text-[#647468] tabular-nums">
+                        <span className="font-extrabold text-[#3F6212]">{gk.cleanSheets}</span> CS ·{' '}
+                        {gk.goalsConceded} sofr. · {gk.gkMatches}j
                       </span>
                     </div>
                   ))}
                 </div>
               </div>
             )}
-          </div>
 
-          {/* Goleiros */}
-          {goalkeepers.length > 0 && (
-            <div className="rp-card rounded-[24px] p-4">
-              <h3 className="mb-3 flex items-center gap-2 font-mono text-[11px] font-extrabold uppercase tracking-[0.14em] text-[#C9D3C4]">
-                <Shield className="h-4 w-4 text-[#FBBF24]" />
-                Goleiros · Jogos sem sofrer gol
-              </h3>
-              <div className="divide-y divide-white/[0.05]">
-                {goalkeepers.map((gk) => (
-                  <div
-                    key={gk.id}
-                    className="flex min-h-[44px] items-center justify-between gap-2 text-sm"
-                  >
-                    <span className="min-w-0 truncate font-bold text-[#F4F7F2]">{gk.name}</span>
-                    <span className="shrink-0 font-mono text-xs text-[#879287] tabular-nums">
-                      <span className="font-extrabold text-[#BEF264]">{gk.cleanSheets}</span> CS ·{' '}
-                      {gk.goalsConceded} sofr. · {gk.gkMatches}j
-                    </span>
+            {isToday && (
+              <div
+                className="rp-card rp-stagger space-y-3 rounded-[26px] p-5"
+                style={{ '--stagger': 2 } as React.CSSProperties}
+              >
+                <div className="flex items-center justify-between">
+                  <h3 className="font-mono text-[11px] font-extrabold uppercase tracking-[0.14em] text-[#647468]">
+                    Partidas de hoje
+                  </h3>
+                  <span className="rounded-lg bg-[#F6F9F2] px-2 py-0.5 font-mono text-[10px] font-extrabold text-[#3F6212] tabular-nums">
+                    {history.length}
+                  </span>
+                </div>
+                {history.length === 0 ? (
+                  <p className="rp-well rounded-2xl py-6 text-center text-xs font-medium text-[#647468]">
+                    As partidas encerradas aparecerão aqui.
+                  </p>
+                ) : (
+                  <div className="space-y-2">
+                    {history.map((m) => (
+                      <div
+                        key={m.id}
+                        className="rp-well flex items-center justify-between gap-2 rounded-2xl px-3.5 py-3 text-xs"
+                      >
+                        <span className="min-w-0 truncate font-bold text-[#0D1510]">
+                          {m.teamAName}{' '}
+                          <span className="font-mono text-sm font-extrabold text-[#3F6212]">
+                            {m.scoreA}
+                          </span>{' '}
+                          <span className="font-mono text-[#A8B8A4]">×</span>{' '}
+                          <span className="font-mono text-sm font-extrabold text-[#3F6212]">
+                            {m.scoreB}
+                          </span>{' '}
+                          {m.teamBName}
+                        </span>
+                        <span className="shrink-0 font-mono text-[11px] font-semibold text-[#647468] tabular-nums">
+                          {m.finishedAt}
+                        </span>
+                      </div>
+                    ))}
                   </div>
-                ))}
+                )}
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Histórico de Partidas */}
-          {isToday && (
-            <div className="rp-surface space-y-2.5 rounded-[24px] p-4">
-              <h3 className="font-mono text-[11px] font-extrabold uppercase tracking-[0.14em] text-[#879287]">
-                Partidas de hoje ({history.length})
-              </h3>
-              {history.length === 0 ? (
-                <p className="py-2 text-xs text-[#879287]">
-                  As partidas encerradas aparecerão aqui.
-                </p>
-              ) : (
-                <div className="space-y-2">
-                  {history.map((m) => (
-                    <div
-                      key={m.id}
-                      className="rp-well flex items-center justify-between gap-2 rounded-2xl px-3.5 py-3 text-xs"
+            {/* Ações de Arquivamento / Reset (exclusivo Admin) */}
+            {isAdmin &&
+              (isToday ? (
+                history.length > 0 && (
+                  <div className="rp-card space-y-2.5 rounded-[26px] p-5">
+                    <p className="rp-eyebrow">FECHAMENTO DO DIA</p>
+                    <button
+                      type="button"
+                      onClick={handleArchive}
+                      className="flex min-h-[50px] w-full items-center justify-center gap-2 rounded-[16px] bg-gradient-to-br from-[#FDE68A] to-[#F59E0B] text-sm font-extrabold text-[#1A1405] shadow-md shadow-[#F59E0B]/20 hover:brightness-105"
                     >
-                      <span className="min-w-0 truncate font-bold text-[#F4F7F2]">
-                        {m.teamAName}{' '}
-                        <span className="font-mono font-extrabold text-[#BEF264]">
-                          {m.scoreA}
-                        </span>{' '}
-                        <span className="font-mono text-[#4B554C]">×</span>{' '}
-                        <span className="font-mono font-extrabold text-[#BEF264]">
-                          {m.scoreB}
-                        </span>{' '}
-                        {m.teamBName}
-                      </span>
-                      <span className="shrink-0 font-mono text-[11px] text-[#879287] tabular-nums">
-                        {m.finishedAt}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Ações de Arquivamento / Reset (exclusivo Admin) */}
-          {isAdmin &&
-            (isToday ? (
-              history.length > 0 && (
-                <div className="space-y-2 pt-1">
-                  <button
-                    type="button"
-                    onClick={handleArchive}
-                    className="flex min-h-[52px] w-full items-center justify-center gap-2 rounded-[18px] bg-gradient-to-br from-[#FDE68A] to-[#FBBF24] text-sm font-extrabold text-[#1A1405] shadow-lg shadow-[#FBBF24]/15"
-                  >
-                    <Archive className="h-4 w-4" /> Encerrar dia e arquivar racha
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleResetDay}
-                    className="flex min-h-[44px] w-full items-center justify-center gap-1.5 rounded-2xl border border-[#F87171]/30 bg-[#F87171]/10 text-xs font-bold text-[#FCA5A5] hover:bg-[#F87171]/15"
-                  >
-                    <RotateCcw className="h-3.5 w-3.5" /> Descartar estatísticas do dia
-                  </button>
-                </div>
-              )
-            ) : (
-              archivedMatches > 0 && (
-                <button
-                  type="button"
-                  onClick={handleResetAll}
-                  className="flex min-h-[44px] w-full items-center justify-center gap-1.5 rounded-2xl border border-[#F87171]/30 bg-[#F87171]/10 text-xs font-bold text-[#FCA5A5] hover:bg-[#F87171]/15"
-                >
-                  <Trash2 className="h-3.5 w-3.5" /> Apagar ranking geral
-                </button>
-              )
-            ))}
-
-          {!hasData && isToday && (
-            <p className="text-center text-xs text-[#879287]">
-              Jogue e encerre partidas para ver os números aqui.
-            </p>
-          )}
-        </>
+                      <Archive className="h-4 w-4" /> Encerrar dia e arquivar racha
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleResetDay}
+                      className="flex min-h-[44px] w-full items-center justify-center gap-1.5 rounded-2xl border border-[#DC2626]/25 bg-[#FEE2E2] text-xs font-bold text-[#991B1B] hover:bg-[#FECACA]"
+                    >
+                      <RotateCcw className="h-3.5 w-3.5" /> Descartar estatísticas do dia
+                    </button>
+                  </div>
+                )
+              ) : (
+                archivedMatches > 0 && (
+                  <div className="rp-card space-y-2.5 rounded-[26px] p-5">
+                    <p className="rp-eyebrow">MANUTENÇÃO</p>
+                    <button
+                      type="button"
+                      onClick={handleResetAll}
+                      className="flex min-h-[44px] w-full items-center justify-center gap-1.5 rounded-2xl border border-[#DC2626]/25 bg-[#FEE2E2] text-xs font-bold text-[#991B1B] hover:bg-[#FECACA]"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" /> Apagar ranking geral
+                    </button>
+                  </div>
+                )
+              ))}
+          </div>
+        </div>
       )}
 
       {showCard && <ShareCardModal data={cardData} onClose={() => setShowCard(false)} />}

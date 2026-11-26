@@ -24,16 +24,16 @@ export class ErrorBoundary extends React.Component<
   render() {
     if (this.state.hasError) {
       return (
-        <div className="flex min-h-screen flex-col items-center justify-center bg-[#080B0A] px-4 text-center text-[#F4F7F2]">
+        <div className="flex min-h-screen flex-col items-center justify-center bg-[#F3F6EE] px-4 text-center text-[#0D1510]">
           <div className="rp-card w-full max-w-sm space-y-4 rounded-[28px] p-6">
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[#FBBF24]/15 text-[#FBBF24]">
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[#FEF3C7] text-[#D97706]">
               <AlertTriangle className="h-6 w-6" />
             </div>
             <div>
-              <h1 className="text-lg font-extrabold tracking-[-0.03em] text-[#F7FAEF]">
+              <h1 className="text-lg font-extrabold tracking-[-0.03em] text-[#0D1510]">
                 Algo saiu de linha
               </h1>
-              <p className="mt-1 text-xs leading-relaxed text-[#879287]">
+              <p className="mt-1 text-xs leading-relaxed text-[#647468]">
                 Ocorreu um erro inesperado na tela. Recarregue o aplicativo para voltar ao jogo.
               </p>
             </div>

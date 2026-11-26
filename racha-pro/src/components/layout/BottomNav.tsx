@@ -21,7 +21,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
   ];
 
   return (
-    <nav className="bottom-nav" aria-label="Navegação principal">
+    <nav className="bottom-nav lg:hidden" aria-label="Navegação principal">
       <div className="bottom-nav-inner">
         {items.map((item) => {
           const active = activeTab === item.id;

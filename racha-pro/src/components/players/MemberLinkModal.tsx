@@ -58,18 +58,18 @@ export const MemberLinkModal: React.FC<MemberLinkModalProps> = ({
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="rp-card flex max-h-[88vh] w-full max-w-md animate-sheet-in flex-col rounded-t-[28px] text-[#F4F7F2] sm:rounded-[28px]"
+        className="rp-card flex max-h-[88vh] w-full max-w-lg animate-sheet-in flex-col rounded-t-[28px] bg-white text-[#0D1510] sm:rounded-[28px]"
       >
-        <div className="flex items-center justify-between border-b border-white/[0.085] px-5 py-4">
+        <div className="flex items-center justify-between border-b border-[#0D1510]/[0.08] px-5 py-4">
           <div className="flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#84CC16]/15 text-[#BEF264]">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#ECFCCB] text-[#3F6212]">
               <Users className="h-4 w-4" />
             </div>
             <div>
-              <h2 className="text-base font-extrabold tracking-[-0.03em] text-[#F7FAEF]">
+              <h2 className="text-base font-extrabold tracking-[-0.03em] text-[#0D1510]">
                 Membros e vínculos
               </h2>
-              <p className="font-mono text-[11px] text-[#879287]">
+              <p className="font-mono text-[11px] font-semibold text-[#647468]">
                 {members.length} {members.length === 1 ? 'conta vinculada' : 'contas no racha'}
               </p>
             </div>
@@ -78,21 +78,21 @@ export const MemberLinkModal: React.FC<MemberLinkModalProps> = ({
             type="button"
             onClick={onClose}
             aria-label="Fechar"
-            className="flex h-11 w-11 items-center justify-center rounded-full border border-white/[0.085] bg-[#0B100D] text-[#879287] hover:text-[#F4F7F2]"
+            className="flex h-10 w-10 items-center justify-center rounded-full border border-[#0D1510]/10 bg-[#F6F9F2] text-[#647468] hover:text-[#0D1510]"
           >
             <X className="h-5 w-5" />
           </button>
         </div>
 
         <div className="flex-1 space-y-3 overflow-y-auto px-5 py-4 pb-safe">
-          <p className="text-xs leading-relaxed text-[#879287]">
+          <p className="text-xs leading-relaxed text-[#647468]">
             Associe qualquer membro autenticado a um jogador existente do elenco para preservar todo
             o histórico de gols, assistências e partidas dele. Nunca vinculamos contas apenas por
             nome parecido.
           </p>
 
           {members.length === 0 ? (
-            <p className="rp-well rounded-2xl p-6 text-center text-xs text-[#879287]">
+            <p className="rp-well rounded-2xl p-6 text-center text-xs font-medium text-[#647468]">
               Nenhum membro entrou ainda. Compartilhe o código de convite em Meus Rachas.
             </p>
           ) : (
@@ -108,28 +108,26 @@ export const MemberLinkModal: React.FC<MemberLinkModalProps> = ({
               });
 
               return (
-                <div
-                  key={member.id}
-                  className="rp-well space-y-2.5 rounded-[20px] p-3.5"
-                >
+                <div key={member.id} className="rp-well space-y-2.5 rounded-[20px] p-3.5">
                   <div className="flex items-center justify-between gap-2">
                     <div className="min-w-0">
                       <div className="flex items-center gap-1.5">
-                        <span className="truncate text-sm font-extrabold text-[#F4F7F2]">
+                        <span className="truncate text-sm font-extrabold text-[#0D1510]">
                           {member.display_name}
                         </span>
                         {isMe && (
-                          <span className="rounded-md bg-[#84CC16]/15 px-1.5 py-0.5 font-mono text-[10px] font-extrabold uppercase text-[#BEF264]">
+                          <span className="rounded-md bg-[#ECFCCB] px-1.5 py-0.5 font-mono text-[10px] font-extrabold uppercase text-[#365314]">
                             Você
                           </span>
                         )}
                       </div>
-                      <p className="mt-0.5 flex items-center gap-1 text-[11px] text-[#879287]">
+                      <p className="mt-0.5 flex items-center gap-1 text-[11px] text-[#647468]">
                         {linkedPlayer ? (
                           <>
-                            <UserCheck className="h-3.5 w-3.5 text-[#BEF264]" />
+                            <UserCheck className="h-3.5 w-3.5 text-[#3F6212]" />
                             <span>
-                              Jogador: <strong className="text-[#C9D3C4]">{linkedPlayer.name}</strong>
+                              Jogador:{' '}
+                              <strong className="text-[#0D1510]">{linkedPlayer.name}</strong>
                             </span>
                           </>
                         ) : (
@@ -141,8 +139,8 @@ export const MemberLinkModal: React.FC<MemberLinkModalProps> = ({
                     <span
                       className={`inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-0.5 font-mono text-[10px] font-extrabold uppercase ${
                         member.role === 'admin'
-                          ? 'border border-[#BEF264]/30 bg-[#84CC16]/12 text-[#BEF264]'
-                          : 'border border-white/10 bg-white/[0.04] text-[#C9D3C4]'
+                          ? 'border border-[#65A30D]/30 bg-[#ECFCCB] text-[#365314]'
+                          : 'border border-[#0D1510]/10 bg-white text-[#46544A]'
                       }`}
                     >
                       {member.role === 'admin' && <Shield className="h-3 w-3" />}
@@ -175,7 +173,7 @@ export const MemberLinkModal: React.FC<MemberLinkModalProps> = ({
                       type="button"
                       disabled={isBusy || !draft || draft === member.player_id}
                       onClick={() => void handleLink(member)}
-                      className="rp-btn-primary flex min-h-[42px] shrink-0 items-center gap-1.5 rounded-xl px-3 text-xs disabled:opacity-40"
+                      className="rp-btn-primary flex min-h-[42px] shrink-0 items-center gap-1.5 rounded-xl px-3.5 text-xs disabled:opacity-40"
                     >
                       {isBusy ? (
                         <Loader2 className="h-3.5 w-3.5 animate-spin" />

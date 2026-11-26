@@ -82,36 +82,36 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({ data, onClose })
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="rp-card flex max-h-[94vh] w-full max-w-md animate-sheet-in flex-col gap-3 rounded-[28px] p-5"
+        className="rp-card flex max-h-[94vh] w-full max-w-md animate-sheet-in flex-col gap-3.5 rounded-[28px] bg-white p-5 text-[#0D1510]"
       >
         <div className="flex items-center justify-between">
           <div>
             <p className="rp-eyebrow">STORIES · 9:16</p>
-            <h3 className="text-base font-extrabold tracking-[-0.03em] text-[#F7FAEF]">
+            <h3 className="text-base font-extrabold tracking-[-0.03em] text-[#0D1510]">
               Card do Racha
             </h3>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="flex h-11 w-11 items-center justify-center rounded-full border border-white/[0.085] bg-[#0B100D] text-[#879287] hover:text-[#F4F7F2]"
+            className="flex h-10 w-10 items-center justify-center rounded-full border border-[#0D1510]/10 bg-[#F6F9F2] text-[#647468] hover:text-[#0D1510]"
             aria-label="Fechar"
           >
             <X className="h-5 w-5" />
           </button>
         </div>
 
-        <div className="flex min-h-0 flex-1 items-center justify-center overflow-hidden rounded-2xl border border-white/[0.085] bg-[#080B0A]">
+        <div className="flex min-h-0 flex-1 items-center justify-center overflow-hidden rounded-2xl border border-[#0D1510]/10 bg-[#0F1712] p-2">
           {previewUrl ? (
             <img
               src={previewUrl}
               alt="Prévia do card de Stories com o pódio do racha"
-              className="max-h-[58vh] w-auto max-w-full object-contain"
+              className="max-h-[58vh] w-auto max-w-full rounded-xl object-contain"
             />
           ) : failed ? (
-            <p className="p-8 text-sm text-[#F87171]">Não foi possível gerar a imagem.</p>
+            <p className="p-8 text-sm text-[#FCA5A5]">Não foi possível gerar a imagem.</p>
           ) : (
-            <div className="flex items-center gap-2 p-10 font-mono text-xs text-[#879287]">
+            <div className="flex items-center gap-2 p-10 font-mono text-xs text-[#C9D3C4]">
               <Loader2 className="h-4 w-4 animate-spin text-[#BEF264]" /> Gerando card...
             </div>
           )}
@@ -133,7 +133,7 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({ data, onClose })
               disabled={!blob}
               className="rp-btn-secondary flex min-h-[48px] items-center justify-center gap-2 rounded-2xl text-xs disabled:opacity-40"
             >
-              <Share2 className="h-4 w-4 text-[#BEF264]" /> Compartilhar
+              <Share2 className="h-4 w-4 text-[#3F6212]" /> Compartilhar
             </button>
           )}
         </div>

@@ -4,7 +4,7 @@
   "description": "O placar da sua pelada: organize jogadores, sorteie times equilibrados e acompanhe partidas ao vivo.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#080B0A",
+  "background_color": "#F3F6EE",
   "theme_color": "#84CC16",
   "icons": [
     {

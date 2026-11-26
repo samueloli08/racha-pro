@@ -60,17 +60,17 @@ export const Header: React.FC<HeaderProps> = ({
   })();
 
   return (
-    <header className="app-header">
-      <div className="mx-auto flex max-w-2xl items-center justify-between gap-2 px-4 py-3 sm:px-6">
+    <header className="app-header lg:hidden">
+      <div className="mx-auto flex max-w-4xl items-center justify-between gap-2 px-4 py-3 sm:px-6">
         <div className="flex min-w-0 items-center gap-2.5">
           <BrandMark size="md" />
           <div className="min-w-0">
             {isViewer ? (
               <div className="flex items-center gap-1.5">
-                <h1 className="truncate text-[16px] font-extrabold leading-tight tracking-[-0.04em] text-[#F4F7F2]">
+                <h1 className="truncate text-[16px] font-extrabold leading-tight tracking-[-0.04em] text-[#0D1510]">
                   {rachaName}
                 </h1>
-                <span className="inline-flex shrink-0 items-center gap-1 rounded-md border border-[#FBBF24]/35 bg-[#FBBF24]/10 px-1.5 py-0.5 font-mono text-[10px] font-extrabold uppercase tracking-[0.06em] text-[#FDE68A]">
+                <span className="inline-flex shrink-0 items-center gap-1 rounded-md border border-[#D97706]/30 bg-[#FEF3C7] px-1.5 py-0.5 font-mono text-[10px] font-extrabold uppercase tracking-[0.06em] text-[#92400E]">
                   <Eye className="h-3 w-3" />
                   Leitura
                 </span>
@@ -78,23 +78,24 @@ export const Header: React.FC<HeaderProps> = ({
             ) : (
               <button
                 type="button"
+                disabled={!onOpenRachas}
                 onClick={onOpenRachas}
                 title="Trocar de racha, entrar com código ou gerenciar conta"
-                className="group flex max-w-full items-center gap-1.5 rounded-lg text-left transition hover:text-[#D9F99D]"
+                className="group flex max-w-full items-center gap-1.5 rounded-lg text-left transition hover:text-[#3F6212] disabled:cursor-default"
               >
-                <h1 className="truncate text-[16px] font-extrabold leading-tight tracking-[-0.04em] text-[#F4F7F2] group-hover:text-[#D9F99D]">
+                <h1 className="truncate text-[16px] font-extrabold leading-tight tracking-[-0.04em] text-[#0D1510] group-hover:text-[#3F6212]">
                   {rachaName}
                 </h1>
                 {isMember && (
-                  <span className="shrink-0 rounded-md border border-[#60A5FA]/30 bg-[#60A5FA]/10 px-1.5 py-0.5 font-mono text-[9px] font-extrabold uppercase tracking-[0.06em] text-[#93C5FD]">
+                  <span className="shrink-0 rounded-md border border-blue-500/25 bg-blue-50 px-1.5 py-0.5 font-mono text-[9px] font-extrabold uppercase tracking-[0.06em] text-blue-700">
                     Jogador
                   </span>
                 )}
-                <ChevronDown className="h-4 w-4 shrink-0 text-[#BEF264] transition group-hover:translate-y-0.5" />
+                <ChevronDown className="h-4 w-4 shrink-0 text-[#3F6212] transition group-hover:translate-y-0.5" />
               </button>
             )}
-            <p className="truncate text-[11px] font-medium text-[#879287]">
-              {presentCount} presentes <span className="mx-1 text-[#4B554C]">/</span> {matchesCount}{' '}
+            <p className="truncate text-[11px] font-semibold text-[#647468]">
+              {presentCount} presentes <span className="mx-1 text-[#C5D1C1]">/</span> {matchesCount}{' '}
               {matchesCount === 1 ? 'partida hoje' : 'partidas hoje'}
             </p>
           </div>
@@ -107,7 +108,7 @@ export const Header: React.FC<HeaderProps> = ({
               onClick={onCopyShareLink}
               title="Copiar link somente leitura para o grupo"
               aria-label="Copiar link somente leitura"
-              className="flex h-11 w-11 items-center justify-center rounded-full border border-white/[0.11] bg-[#111713] text-[#BEF264] transition hover:border-[#BEF264]/40 hover:bg-[#84CC16]/10"
+              className="flex h-11 w-11 items-center justify-center rounded-full border border-[#0D1510]/10 bg-white text-[#3F6212] shadow-sm transition hover:border-[#84CC16]/50 hover:bg-[#F6F9F2]"
             >
               <Link2 className="h-4 w-4" />
             </button>
@@ -125,7 +126,10 @@ export const Header: React.FC<HeaderProps> = ({
             ) : syncStatus === 'offline' ? (
               <CloudOff className="h-3.5 w-3.5" />
             ) : (
-              <span className="sync-dot" />
+              <span className="sync-dot-wrap">
+                {isLivePill && <span className="sync-dot-pulse" />}
+                <span className="sync-dot" />
+              </span>
             )}
             <span className={isLivePill ? 'inline' : 'hidden sm:inline'}>{syncMeta.label}</span>
           </button>
@@ -135,7 +139,7 @@ export const Header: React.FC<HeaderProps> = ({
               <button
                 type="button"
                 onClick={onBackToMyRachas}
-                className="flex min-h-[44px] items-center gap-1.5 rounded-full border border-[#BEF264]/30 bg-[#84CC16]/10 px-3 text-xs font-extrabold text-[#D9F99D] transition hover:bg-[#84CC16]/20"
+                className="rp-btn-primary flex min-h-[44px] items-center gap-1.5 rounded-full px-3.5 text-xs"
               >
                 Meus rachas
               </button>
@@ -143,9 +147,9 @@ export const Header: React.FC<HeaderProps> = ({
               <button
                 type="button"
                 onClick={onOpenAuth}
-                className="flex min-h-[44px] items-center gap-1.5 rounded-full border border-white/[0.12] bg-[#111713] px-3 text-xs font-bold text-[#F4F7F2] transition hover:border-[#BEF264]/40 hover:text-[#D9F99D]"
+                className="rp-btn-secondary flex min-h-[44px] items-center gap-1.5 rounded-full px-3.5 text-xs"
               >
-                <LogIn className="h-3.5 w-3.5 text-[#BEF264]" />
+                <LogIn className="h-3.5 w-3.5 text-[#3F6212]" />
                 Entrar
               </button>
             ))}
