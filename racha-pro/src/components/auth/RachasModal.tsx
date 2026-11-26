@@ -166,7 +166,9 @@ export const RachasModal: React.FC<RachasModalProps> = ({
     }
     const copied = await copyText(buildShareUrl(res.shareCode));
     toast.show(
-      copied ? 'Novo link de leitura gerado e copiado!' : 'Novo link gerado! O antigo foi revogado.',
+      copied
+        ? 'Novo link de leitura gerado e copiado!'
+        : 'Novo link gerado! O antigo foi revogado.',
       'success'
     );
   };
@@ -233,16 +235,16 @@ export const RachasModal: React.FC<RachasModalProps> = ({
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="rp-card flex max-h-[90vh] w-full max-w-md animate-sheet-in flex-col rounded-t-[28px] text-[#F4F7F2] sm:rounded-[28px]"
+        className="rp-card flex max-h-[90vh] w-full max-w-lg animate-sheet-in flex-col rounded-t-[28px] bg-white text-[#0D1510] sm:rounded-[28px]"
       >
-        <div className="flex items-center justify-between border-b border-white/[0.085] px-5 py-4">
+        <div className="flex items-center justify-between border-b border-[#0D1510]/[0.08] px-5 py-4">
           <div className="flex items-center gap-3">
             <BrandMark size="sm" />
             <div>
-              <h2 className="text-base font-extrabold tracking-[-0.03em] text-[#F7FAEF]">
+              <h2 className="text-base font-extrabold tracking-[-0.03em] text-[#0D1510]">
                 Meus rachas
               </h2>
-              <p className="font-mono text-[11px] text-[#879287]">
+              <p className="font-mono text-[11px] font-semibold text-[#647468]">
                 {rachas.length} {rachas.length === 1 ? 'racha na conta' : 'rachas na conta'}
               </p>
             </div>
@@ -251,7 +253,7 @@ export const RachasModal: React.FC<RachasModalProps> = ({
             type="button"
             onClick={onClose}
             aria-label="Fechar"
-            className="flex h-11 w-11 items-center justify-center rounded-full border border-white/[0.085] bg-[#0B100D] text-[#879287] hover:text-[#F4F7F2]"
+            className="flex h-10 w-10 items-center justify-center rounded-full border border-[#0D1510]/10 bg-[#F6F9F2] text-[#647468] hover:text-[#0D1510]"
           >
             <X className="h-5 w-5" />
           </button>
@@ -259,8 +261,8 @@ export const RachasModal: React.FC<RachasModalProps> = ({
 
         <div className="flex-1 space-y-5 overflow-y-auto px-5 py-4">
           {/* Ações: Entrar por código ou Criar novo racha */}
-          <div className="rp-well space-y-3 rounded-[22px] p-3">
-            <div className="grid grid-cols-2 gap-1.5 rounded-xl bg-[#080B0A] p-1">
+          <div className="rp-well space-y-3 rounded-[22px] p-3.5">
+            <div className="grid grid-cols-2 gap-1.5 rounded-xl bg-white/90 p-1 ring-1 ring-[#0D1510]/[0.06]">
               <button
                 type="button"
                 onClick={() => {
@@ -270,7 +272,7 @@ export const RachasModal: React.FC<RachasModalProps> = ({
                 className={`flex min-h-[40px] items-center justify-center gap-1.5 rounded-lg text-xs font-extrabold transition ${
                   actionTab === 'join'
                     ? 'rp-btn-primary'
-                    : 'text-[#879287] hover:text-[#F4F7F2]'
+                    : 'text-[#647468] hover:text-[#0D1510]'
                 }`}
               >
                 <LogIn className="h-3.5 w-3.5" />
@@ -282,7 +284,7 @@ export const RachasModal: React.FC<RachasModalProps> = ({
                 className={`flex min-h-[40px] items-center justify-center gap-1.5 rounded-lg text-xs font-extrabold transition ${
                   actionTab === 'create'
                     ? 'rp-btn-primary'
-                    : 'text-[#879287] hover:text-[#F4F7F2]'
+                    : 'text-[#647468] hover:text-[#0D1510]'
                 }`}
               >
                 <Plus className="h-3.5 w-3.5 stroke-[2.5]" />
@@ -323,10 +325,10 @@ export const RachasModal: React.FC<RachasModalProps> = ({
                   minLength={2}
                   maxLength={40}
                   placeholder="Seu nome na quadra (visível para o grupo)"
-                  className="rp-input min-h-[42px] w-full rounded-xl px-3 text-xs"
+                  className="rp-input min-h-[42px] w-full rounded-xl px-3 text-xs font-medium"
                 />
                 {joinError && (
-                  <p className="rounded-xl border border-[#F87171]/35 bg-[#F87171]/10 px-3 py-2 text-xs font-medium text-[#FCA5A5]">
+                  <p className="rounded-xl border border-[#DC2626]/30 bg-[#FEE2E2] px-3 py-2 text-xs font-semibold text-[#991B1B]">
                     {joinError}
                   </p>
                 )}
@@ -339,7 +341,7 @@ export const RachasModal: React.FC<RachasModalProps> = ({
                   onChange={(e) => setNewName(e.target.value)}
                   maxLength={48}
                   placeholder="Nome do racha (ex: Pelada de Sexta)..."
-                  className="rp-input min-w-0 flex-1 rounded-xl px-3 text-sm"
+                  className="rp-input min-w-0 flex-1 rounded-xl px-3 text-sm font-medium"
                 />
                 <button
                   type="submit"
@@ -360,8 +362,8 @@ export const RachasModal: React.FC<RachasModalProps> = ({
           {/* Rachas que administro */}
           {ownedRachas.length > 0 && (
             <div className="space-y-2.5">
-              <p className="flex items-center gap-1.5 font-mono text-[11px] font-extrabold uppercase tracking-[0.14em] text-[#879287]">
-                <Shield className="h-3.5 w-3.5 text-[#BEF264]" />
+              <p className="flex items-center gap-1.5 font-mono text-[11px] font-extrabold uppercase tracking-[0.14em] text-[#647468]">
+                <Shield className="h-3.5 w-3.5 text-[#3F6212]" />
                 Rachas que organizo ({ownedRachas.length})
               </p>
 
@@ -373,10 +375,10 @@ export const RachasModal: React.FC<RachasModalProps> = ({
                 return (
                   <div
                     key={racha.id}
-                    className={`rounded-[20px] border p-3 transition ${
+                    className={`rounded-[22px] border p-3.5 transition ${
                       isActive
-                        ? 'border-[#BEF264]/45 bg-[#84CC16]/10'
-                        : 'border-white/[0.085] bg-[#0B100D] hover:border-white/[0.16]'
+                        ? 'border-[#84CC16]/55 bg-[#ECFCCB]/45 shadow-sm'
+                        : 'border-[#0D1510]/10 bg-[#F6F9F2]/75 hover:border-[#0D1510]/20'
                     }`}
                   >
                     {isEditing ? (
@@ -406,14 +408,14 @@ export const RachasModal: React.FC<RachasModalProps> = ({
                         <button
                           type="button"
                           onClick={() => setEditingId(null)}
-                          className="rp-btn-secondary flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-[#879287]"
+                          className="rp-btn-secondary flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-[#647468]"
                           aria-label="Cancelar"
                         >
                           <X className="h-4 w-4" />
                         </button>
                       </form>
                     ) : (
-                      <div className="space-y-2.5">
+                      <div className="space-y-3">
                         <div className="flex items-center justify-between gap-2">
                           <button
                             type="button"
@@ -424,16 +426,16 @@ export const RachasModal: React.FC<RachasModalProps> = ({
                             className="min-h-[44px] min-w-0 flex-1 text-left"
                           >
                             <div className="flex items-center gap-2">
-                              <span className="truncate text-sm font-extrabold text-[#F4F7F2]">
+                              <span className="truncate text-sm font-extrabold text-[#0D1510]">
                                 {racha.name}
                               </span>
                               {isActive && (
-                                <span className="shrink-0 rounded-md bg-[#BEF264]/20 px-1.5 py-0.5 font-mono text-[10px] font-extrabold uppercase text-[#BEF264]">
+                                <span className="shrink-0 rounded-md bg-[#84CC16]/25 px-1.5 py-0.5 font-mono text-[10px] font-extrabold uppercase text-[#365314]">
                                   Ativo
                                 </span>
                               )}
                             </div>
-                            <p className="mt-0.5 font-mono text-[11px] text-[#879287]">
+                            <p className="mt-0.5 font-mono text-[11px] font-medium text-[#647468]">
                               {racha.is_public
                                 ? `leitura ativa · ${racha.share_code}`
                                 : 'link leitura pausado'}
@@ -446,10 +448,10 @@ export const RachasModal: React.FC<RachasModalProps> = ({
                               onClick={() => void handleCopyShare(racha)}
                               title="Copiar link somente leitura"
                               aria-label={`Copiar link de ${racha.name}`}
-                              className={`flex h-10 w-10 items-center justify-center rounded-xl ${
+                              className={`flex h-9 w-9 items-center justify-center rounded-xl ${
                                 racha.is_public
-                                  ? 'text-[#BEF264] hover:bg-[#84CC16]/15'
-                                  : 'text-[#4B554C] hover:bg-white/[0.04]'
+                                  ? 'text-[#3F6212] hover:bg-[#ECFCCB]'
+                                  : 'text-[#9BA89E] hover:bg-white'
                               }`}
                             >
                               <Link2 className="h-4 w-4" />
@@ -462,7 +464,7 @@ export const RachasModal: React.FC<RachasModalProps> = ({
                               }}
                               title="Renomear racha"
                               aria-label={`Renomear ${racha.name}`}
-                              className="flex h-10 w-10 items-center justify-center rounded-xl text-[#879287] hover:bg-white/[0.04] hover:text-[#FDE68A]"
+                              className="flex h-9 w-9 items-center justify-center rounded-xl text-[#647468] hover:bg-[#FEF3C7] hover:text-[#B45309]"
                             >
                               <Pencil className="h-4 w-4" />
                             </button>
@@ -472,7 +474,7 @@ export const RachasModal: React.FC<RachasModalProps> = ({
                               onClick={() => void handleDelete(racha)}
                               title="Excluir racha"
                               aria-label={`Excluir ${racha.name}`}
-                              className="flex h-10 w-10 items-center justify-center rounded-xl text-[#879287] hover:bg-white/[0.04] hover:text-[#F87171] disabled:opacity-40"
+                              className="flex h-9 w-9 items-center justify-center rounded-xl text-[#647468] hover:bg-[#FEE2E2] hover:text-[#DC2626] disabled:opacity-40"
                             >
                               <Trash2 className="h-4 w-4" />
                             </button>
@@ -481,21 +483,21 @@ export const RachasModal: React.FC<RachasModalProps> = ({
 
                         {/* Código de convite para jogadores autenticados */}
                         {racha.invite_code && (
-                          <div className="flex items-center justify-between gap-2 rounded-xl border border-[#BEF264]/20 bg-[#080B0A]/80 px-3 py-2">
+                          <div className="flex items-center justify-between gap-2 rounded-xl border border-[#84CC16]/35 bg-white px-3 py-2.5 shadow-sm">
                             <div className="min-w-0">
-                              <p className="font-mono text-[9px] font-extrabold uppercase tracking-[0.12em] text-[#879287]">
+                              <p className="font-mono text-[9px] font-extrabold uppercase tracking-[0.12em] text-[#647468]">
                                 Código de convite (jogadores)
                               </p>
-                              <p className="font-mono text-sm font-extrabold tracking-[0.12em] text-[#BEF264]">
+                              <p className="font-mono text-sm font-extrabold tracking-[0.12em] text-[#365314]">
                                 {racha.invite_code}
                               </p>
                             </div>
-                            <div className="flex shrink-0 items-center gap-1">
+                            <div className="flex shrink-0 items-center gap-1.5">
                               <button
                                 type="button"
                                 onClick={() => void handleCopyInviteCode(racha)}
                                 title="Copiar código de convite"
-                                className="flex h-9 items-center gap-1 rounded-lg border border-[#BEF264]/30 bg-[#84CC16]/12 px-2.5 text-[11px] font-extrabold text-[#D9F99D] hover:bg-[#84CC16]/20"
+                                className="flex h-9 items-center gap-1 rounded-lg border border-[#65A30D]/40 bg-[#ECFCCB] px-2.5 text-[11px] font-extrabold text-[#365314] hover:bg-[#D9F99D]"
                               >
                                 <Copy className="h-3 w-3" />
                                 Copiar
@@ -506,7 +508,7 @@ export const RachasModal: React.FC<RachasModalProps> = ({
                                 onClick={() => void handleRegenerateInvite(racha)}
                                 title="Gerar novo código e invalidar o atual"
                                 aria-label="Regenerar código de convite"
-                                className="rp-btn-secondary flex h-9 w-9 items-center justify-center rounded-lg text-[#879287] hover:text-[#F4F7F2] disabled:opacity-40"
+                                className="rp-btn-secondary flex h-9 w-9 items-center justify-center rounded-lg text-[#647468] hover:text-[#0D1510] disabled:opacity-40"
                               >
                                 <RefreshCw className="h-3.5 w-3.5" />
                               </button>
@@ -514,15 +516,15 @@ export const RachasModal: React.FC<RachasModalProps> = ({
                           </div>
                         )}
 
-                        <div className="flex items-center gap-1.5 border-t border-white/[0.06] pt-2">
+                        <div className="flex items-center gap-1.5 border-t border-[#0D1510]/[0.07] pt-2.5">
                           <button
                             type="button"
                             disabled={isBusy}
                             onClick={() => void handleTogglePublic(racha)}
                             className={`inline-flex min-h-[36px] flex-1 items-center justify-center gap-1.5 rounded-xl border px-2 text-[11px] font-bold transition disabled:opacity-40 ${
                               racha.is_public
-                                ? 'border-[#BEF264]/25 bg-[#84CC16]/10 text-[#D9F99D] hover:bg-[#84CC16]/18'
-                                : 'border-[#FBBF24]/30 bg-[#FBBF24]/10 text-[#FDE68A] hover:bg-[#FBBF24]/18'
+                                ? 'border-[#65A30D]/30 bg-[#ECFCCB] text-[#365314] hover:bg-[#D9F99D]'
+                                : 'border-[#D97706]/30 bg-[#FEF3C7] text-[#92400E] hover:bg-[#FDE68A]'
                             }`}
                           >
                             {racha.is_public ? (
@@ -540,9 +542,9 @@ export const RachasModal: React.FC<RachasModalProps> = ({
                             disabled={isBusy}
                             onClick={() => void handleRegenerateShare(racha)}
                             title="Invalidar link de leitura atual e gerar um novo"
-                            className="rp-btn-secondary inline-flex min-h-[36px] items-center justify-center gap-1 rounded-xl px-2.5 text-[11px] disabled:opacity-40"
+                            className="rp-btn-secondary inline-flex min-h-[36px] items-center justify-center gap-1 rounded-xl px-3 text-[11px] disabled:opacity-40"
                           >
-                            <KeyRound className="h-3 w-3" /> Trocar link
+                            <KeyRound className="h-3 w-3 text-[#3F6212]" /> Trocar link
                           </button>
                         </div>
                       </div>
@@ -556,8 +558,8 @@ export const RachasModal: React.FC<RachasModalProps> = ({
           {/* Rachas que participo como jogador */}
           {joinedRachas.length > 0 && (
             <div className="space-y-2.5">
-              <p className="flex items-center gap-1.5 font-mono text-[11px] font-extrabold uppercase tracking-[0.14em] text-[#879287]">
-                <Users className="h-3.5 w-3.5 text-[#60A5FA]" />
+              <p className="flex items-center gap-1.5 font-mono text-[11px] font-extrabold uppercase tracking-[0.14em] text-[#647468]">
+                <Users className="h-3.5 w-3.5 text-blue-600" />
                 Rachas que participo ({joinedRachas.length})
               </p>
 
@@ -571,28 +573,28 @@ export const RachasModal: React.FC<RachasModalProps> = ({
                       onSelect(racha.id);
                       onClose();
                     }}
-                    className={`flex min-h-[56px] w-full items-center justify-between gap-2 rounded-[20px] border px-3.5 py-3 text-left transition ${
+                    className={`flex min-h-[58px] w-full items-center justify-between gap-2 rounded-[20px] border px-4 py-3 text-left transition ${
                       isActive
-                        ? 'border-[#BEF264]/45 bg-[#84CC16]/10'
-                        : 'border-white/[0.085] bg-[#0B100D] hover:border-white/[0.16]'
+                        ? 'border-[#84CC16]/55 bg-[#ECFCCB]/45 shadow-sm'
+                        : 'border-[#0D1510]/10 bg-[#F6F9F2]/75 hover:border-[#0D1510]/20'
                     }`}
                   >
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
-                        <span className="truncate text-sm font-extrabold text-[#F4F7F2]">
+                        <span className="truncate text-sm font-extrabold text-[#0D1510]">
                           {racha.name}
                         </span>
                         {isActive && (
-                          <span className="shrink-0 rounded-md bg-[#BEF264]/20 px-1.5 py-0.5 font-mono text-[10px] font-extrabold uppercase text-[#BEF264]">
+                          <span className="shrink-0 rounded-md bg-[#84CC16]/25 px-1.5 py-0.5 font-mono text-[10px] font-extrabold uppercase text-[#365314]">
                             Ativo
                           </span>
                         )}
                       </div>
-                      <p className="mt-0.5 font-mono text-[11px] text-[#879287]">
+                      <p className="mt-0.5 font-mono text-[11px] text-[#647468]">
                         Confirmar presença e acompanhar estatísticas
                       </p>
                     </div>
-                    <span className="shrink-0 rounded-md border border-[#60A5FA]/30 bg-[#60A5FA]/10 px-2 py-0.5 font-mono text-[10px] font-extrabold uppercase text-[#93C5FD]">
+                    <span className="shrink-0 rounded-md border border-blue-500/25 bg-blue-50 px-2 py-0.5 font-mono text-[10px] font-extrabold uppercase text-blue-700">
                       Jogador
                     </span>
                   </button>
@@ -602,12 +604,12 @@ export const RachasModal: React.FC<RachasModalProps> = ({
           )}
         </div>
 
-        <div className="flex items-center justify-between gap-3 border-t border-white/[0.085] px-5 py-3.5 pb-safe">
+        <div className="flex items-center justify-between gap-3 border-t border-[#0D1510]/[0.08] px-5 py-3.5 pb-safe">
           <div className="min-w-0">
-            <p className="font-mono text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#879287]">
+            <p className="font-mono text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#647468]">
               Conta conectada
             </p>
-            <p className="truncate text-xs font-semibold text-[#C9D3C4]">{userEmail}</p>
+            <p className="truncate text-xs font-bold text-[#0D1510]">{userEmail}</p>
           </div>
           <button
             type="button"
@@ -615,7 +617,7 @@ export const RachasModal: React.FC<RachasModalProps> = ({
               onClose();
               onSignOut();
             }}
-            className="inline-flex min-h-[44px] shrink-0 items-center gap-1.5 rounded-xl border border-[#F87171]/30 bg-[#F87171]/10 px-3.5 text-xs font-bold text-[#FCA5A5] transition hover:bg-[#F87171]/18"
+            className="inline-flex min-h-[42px] shrink-0 items-center gap-1.5 rounded-xl border border-[#DC2626]/25 bg-[#FEE2E2] px-3.5 text-xs font-bold text-[#991B1B] transition hover:bg-[#FECACA]"
           >
             <LogOut className="h-3.5 w-3.5" />
             Sair

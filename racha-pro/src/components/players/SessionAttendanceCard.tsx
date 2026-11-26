@@ -164,7 +164,7 @@ export const SessionAttendanceCard: React.FC<SessionAttendanceCardProps> = ({
 
   const renderCreateForm = () => (
     <form onSubmit={handleCreate} className="rp-well space-y-2.5 rounded-2xl p-3">
-      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-2">
         <input
           type="text"
           value={titleDraft}
@@ -203,11 +203,11 @@ export const SessionAttendanceCard: React.FC<SessionAttendanceCardProps> = ({
 
   if (!activeSession) {
     return (
-      <div className="rp-card space-y-3 rounded-[24px] p-4">
+      <div className="rp-card rp-stagger space-y-3 rounded-[26px] p-5">
         <div className="flex items-center justify-between gap-2">
           <div>
             <p className="rp-eyebrow">PRÓXIMA SESSÃO</p>
-            <h3 className="text-base font-extrabold tracking-[-0.03em] text-[#F7FAEF]">
+            <h3 className="text-base font-extrabold tracking-[-0.03em] text-[#0D1510]">
               Confirmação de presença
             </h3>
           </div>
@@ -215,7 +215,7 @@ export const SessionAttendanceCard: React.FC<SessionAttendanceCardProps> = ({
             <button
               type="button"
               onClick={() => setShowNewForm(true)}
-              className="rp-btn-primary flex min-h-[42px] shrink-0 items-center gap-1.5 rounded-xl px-3 text-xs"
+              className="rp-btn-primary flex min-h-[42px] shrink-0 items-center gap-1.5 rounded-xl px-3.5 text-xs"
             >
               <CalendarPlus className="h-3.5 w-3.5" />
               Abrir lista
@@ -226,7 +226,7 @@ export const SessionAttendanceCard: React.FC<SessionAttendanceCardProps> = ({
         {showNewForm ? (
           renderCreateForm()
         ) : (
-          <p className="text-xs text-[#879287]">
+          <p className="text-xs leading-relaxed text-[#647468]">
             {isAdmin
               ? 'Abra uma sessão para os membros confirmarem presença pelo celular antes da pelada.'
               : 'Aguardando o organizador abrir a lista de presença da próxima sessão.'}
@@ -240,35 +240,35 @@ export const SessionAttendanceCard: React.FC<SessionAttendanceCardProps> = ({
   const formattedDate = formatScheduledDate(activeSession.scheduled_at);
 
   return (
-    <div className="rp-card space-y-3.5 rounded-[24px] p-4">
+    <div className="rp-card rp-stagger space-y-4 rounded-[26px] p-5">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-1.5">
             <span
               className={`font-mono text-[10px] font-extrabold uppercase tracking-[0.14em] ${
-                isOpen ? 'text-[#A3E635]' : 'text-[#FBBF24]'
+                isOpen ? 'text-[#3F6212]' : 'text-[#B45309]'
               }`}
             >
               {isOpen ? 'CONFIRMAÇÕES ABERTAS' : 'CONFIRMAÇÕES ENCERRADAS'}
             </span>
             {formattedDate && (
-              <span className="font-mono text-[10px] font-bold text-[#879287]">
+              <span className="font-mono text-[10px] font-bold text-[#647468]">
                 · {formattedDate}
               </span>
             )}
           </div>
-          <h3 className="mt-0.5 truncate text-base font-extrabold tracking-[-0.03em] text-[#F7FAEF]">
+          <h3 className="mt-0.5 truncate text-base font-extrabold tracking-[-0.03em] text-[#0D1510]">
             {activeSession.title}
           </h3>
         </div>
 
-        <span className="shrink-0 rounded-xl border border-[#BEF264]/30 bg-[#84CC16]/12 px-2.5 py-1 font-mono text-xs font-extrabold text-[#BEF264] tabular-nums">
+        <span className="shrink-0 rounded-xl border border-[#84CC16]/40 bg-[#ECFCCB] px-2.5 py-1 font-mono text-xs font-extrabold text-[#365314] tabular-nums">
           {grouped.going.length} {grouped.going.length === 1 ? 'confirmado' : 'confirmados'}
         </span>
       </div>
 
       {/* Botões de resposta do jogador */}
-      <div className="space-y-1.5">
+      <div className="space-y-2">
         <div className="grid grid-cols-3 gap-2">
           {(
             [
@@ -282,13 +282,13 @@ export const SessionAttendanceCard: React.FC<SessionAttendanceCardProps> = ({
                 id: 'maybe' as RsvpStatus,
                 label: 'Talvez',
                 icon: <HelpCircle className="h-4 w-4 shrink-0" />,
-                activeCls: 'border-[#FBBF24]/55 bg-[#FBBF24]/18 text-[#FDE68A]',
+                activeCls: 'border-[#D97706]/50 bg-[#FEF3C7] text-[#92400E] shadow-sm',
               },
               {
                 id: 'not_going' as RsvpStatus,
                 label: 'Não vou',
                 icon: <XCircle className="h-4 w-4 shrink-0" />,
-                activeCls: 'border-[#F87171]/50 bg-[#F87171]/15 text-[#FCA5A5]',
+                activeCls: 'border-[#DC2626]/40 bg-[#FEE2E2] text-[#991B1B] shadow-sm',
               },
             ] as const
           ).map((opt) => {
@@ -302,7 +302,7 @@ export const SessionAttendanceCard: React.FC<SessionAttendanceCardProps> = ({
                 className={`flex min-h-[46px] items-center justify-center gap-1.5 rounded-2xl border px-2 text-xs font-extrabold transition disabled:opacity-50 ${
                   selected
                     ? opt.activeCls
-                    : 'border-white/[0.085] bg-[#0B100D] text-[#C9D3C4] hover:border-white/[0.2]'
+                    : 'border-[#0D1510]/10 bg-[#F6F9F2] text-[#3A473E] hover:border-[#84CC16]/50 hover:bg-[#ECF3E4]'
                 }`}
               >
                 {opt.icon}
@@ -313,7 +313,7 @@ export const SessionAttendanceCard: React.FC<SessionAttendanceCardProps> = ({
         </div>
 
         {!isOpen && (
-          <p className="flex items-center gap-1.5 font-mono text-[11px] font-bold text-[#FDE68A]">
+          <p className="flex items-center gap-1.5 rounded-xl bg-[#FEF3C7] px-3 py-2 font-mono text-[11px] font-bold text-[#92400E]">
             <Lock className="h-3.5 w-3.5 shrink-0" />
             Lista fechada pelo organizador — não é possível alterar respostas.
           </p>
@@ -321,19 +321,19 @@ export const SessionAttendanceCard: React.FC<SessionAttendanceCardProps> = ({
       </div>
 
       {/* Listas separadas visualmente: Confirmados / Talvez / Não vão */}
-      <div className="space-y-2.5 border-t border-white/[0.06] pt-3">
+      <div className="space-y-3 border-t border-[#0D1510]/[0.08] pt-3.5">
         <div>
-          <p className="mb-1.5 font-mono text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#BEF264]">
+          <p className="mb-1.5 font-mono text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#3F6212]">
             Confirmados ({grouped.going.length})
           </p>
           {grouped.going.length === 0 ? (
-            <p className="text-xs text-[#879287]">Ninguém confirmou ainda.</p>
+            <p className="text-xs text-[#647468]">Ninguém confirmou ainda.</p>
           ) : (
             <div className="flex flex-wrap gap-1.5">
               {grouped.going.map((item) => (
                 <span
                   key={item.id}
-                  className="inline-flex min-h-[32px] items-center rounded-xl border border-[#BEF264]/30 bg-[#84CC16]/10 px-2.5 text-xs font-bold text-[#D9F99D]"
+                  className="inline-flex min-h-[32px] items-center rounded-xl border border-[#84CC16]/40 bg-[#ECFCCB] px-2.5 text-xs font-bold text-[#365314]"
                 >
                   {item.label}
                 </span>
@@ -344,14 +344,14 @@ export const SessionAttendanceCard: React.FC<SessionAttendanceCardProps> = ({
 
         {grouped.maybe.length > 0 && (
           <div>
-            <p className="mb-1.5 font-mono text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#FBBF24]">
+            <p className="mb-1.5 font-mono text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#B45309]">
               Indecisos ({grouped.maybe.length})
             </p>
             <div className="flex flex-wrap gap-1.5">
               {grouped.maybe.map((item) => (
                 <span
                   key={item.id}
-                  className="inline-flex min-h-[32px] items-center rounded-xl border border-[#FBBF24]/30 bg-[#FBBF24]/10 px-2.5 text-xs font-bold text-[#FDE68A]"
+                  className="inline-flex min-h-[32px] items-center rounded-xl border border-[#D97706]/30 bg-[#FEF3C7] px-2.5 text-xs font-bold text-[#92400E]"
                 >
                   {item.label}
                 </span>
@@ -362,14 +362,14 @@ export const SessionAttendanceCard: React.FC<SessionAttendanceCardProps> = ({
 
         {grouped.notGoing.length > 0 && (
           <div>
-            <p className="mb-1.5 font-mono text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#F87171]">
+            <p className="mb-1.5 font-mono text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#DC2626]">
               Ausentes ({grouped.notGoing.length})
             </p>
             <div className="flex flex-wrap gap-1.5">
               {grouped.notGoing.map((item) => (
                 <span
                   key={item.id}
-                  className="inline-flex min-h-[32px] items-center rounded-xl border border-white/[0.085] bg-[#0B100D] px-2.5 text-xs font-semibold text-[#879287] line-through"
+                  className="inline-flex min-h-[32px] items-center rounded-xl border border-[#0D1510]/10 bg-[#F6F9F2] px-2.5 text-xs font-semibold text-[#647468] line-through"
                 >
                   {item.label}
                 </span>
@@ -381,7 +381,7 @@ export const SessionAttendanceCard: React.FC<SessionAttendanceCardProps> = ({
 
       {/* Controles administrativos da sessão */}
       {isAdmin && (
-        <div className="space-y-2 border-t border-white/[0.06] pt-3">
+        <div className="space-y-2 border-t border-[#0D1510]/[0.08] pt-3.5">
           {showNewForm ? (
             renderCreateForm()
           ) : (
@@ -394,11 +394,11 @@ export const SessionAttendanceCard: React.FC<SessionAttendanceCardProps> = ({
               >
                 {isOpen ? (
                   <>
-                    <Lock className="h-3.5 w-3.5 text-[#FBBF24]" /> Encerrar lista
+                    <Lock className="h-3.5 w-3.5 text-[#D97706]" /> Encerrar lista
                   </>
                 ) : (
                   <>
-                    <Unlock className="h-3.5 w-3.5 text-[#BEF264]" /> Reabrir lista
+                    <Unlock className="h-3.5 w-3.5 text-[#3F6212]" /> Reabrir lista
                   </>
                 )}
               </button>
@@ -408,14 +408,14 @@ export const SessionAttendanceCard: React.FC<SessionAttendanceCardProps> = ({
                 onClick={() => setShowNewForm(true)}
                 className="rp-btn-secondary flex min-h-[40px] items-center justify-center gap-1.5 rounded-xl px-3 text-xs"
               >
-                <CalendarPlus className="h-3.5 w-3.5 text-[#BEF264]" /> Nova sessão
+                <CalendarPlus className="h-3.5 w-3.5 text-[#3F6212]" /> Nova sessão
               </button>
 
               {grouped.going.length > 0 && onApplyConfirmedToPresence && (
                 <button
                   type="button"
                   onClick={handleSyncToElenco}
-                  className="flex min-h-[42px] w-full items-center justify-center gap-1.5 rounded-xl border border-[#BEF264]/35 bg-[#84CC16]/12 px-3 text-xs font-extrabold text-[#D9F99D] transition hover:bg-[#84CC16]/20"
+                  className="flex min-h-[42px] w-full items-center justify-center gap-1.5 rounded-xl border border-[#65A30D]/40 bg-[#ECFCCB] px-3 text-xs font-extrabold text-[#365314] transition hover:bg-[#D9F99D]"
                 >
                   <UserCheck className="h-4 w-4" />
                   Aplicar {grouped.going.length} confirmado(s) no check-in do Elenco

@@ -40,45 +40,47 @@ export const ResetPasswordScreen: React.FC<ResetPasswordScreenProps> = ({
   };
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center px-4 py-10 text-[#F4F7F2]">
+    <div className="flex min-h-screen flex-col items-center justify-center px-4 py-10 text-[#0D1510]">
       <div className="w-full max-w-md space-y-6">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2.5">
             <BrandMark size="md" />
             <div className="min-w-0">
               <p className="rp-eyebrow">SEGURANÇA</p>
-              <p className="max-w-[200px] truncate text-xs text-[#879287]">{userEmail}</p>
+              <p className="max-w-[200px] truncate text-xs font-medium text-[#647468]">
+                {userEmail}
+              </p>
             </div>
           </div>
           <button
             type="button"
             onClick={onSignOut}
-            className="rp-btn-secondary inline-flex min-h-[44px] items-center gap-1.5 rounded-2xl px-3.5 text-xs hover:border-[#F87171]/40 hover:text-[#FCA5A5]"
+            className="rp-btn-secondary inline-flex min-h-[42px] items-center gap-1.5 rounded-2xl px-3.5 text-xs hover:border-[#DC2626]/35 hover:text-[#DC2626]"
           >
             <LogOut className="h-3.5 w-3.5" />
             Sair
           </button>
         </div>
 
-        <div className="rp-card rounded-[28px] p-6">
+        <div className="rp-card rp-stagger rounded-[28px] p-6">
           <div className="mb-3 flex items-center gap-2">
-            <KeyRound className="h-5 w-5 text-[#BEF264]" />
-            <h2 className="text-xl font-extrabold tracking-[-0.04em] text-[#F7FAEF]">
+            <KeyRound className="h-5 w-5 text-[#3F6212]" />
+            <h2 className="text-xl font-extrabold tracking-[-0.04em] text-[#0D1510]">
               Definir nova senha
             </h2>
           </div>
-          <p className="mb-5 text-xs leading-relaxed text-[#879287]">
+          <p className="mb-5 text-xs leading-relaxed text-[#647468]">
             Por segurança, defina uma nova senha (mínimo 8 caracteres) para concluir a recuperação
             da sua conta.
           </p>
 
           <form onSubmit={handleSubmit} className="space-y-3.5">
             <div>
-              <label className="mb-1.5 block font-mono text-[11px] font-extrabold uppercase tracking-[0.12em] text-[#879287]">
+              <label className="mb-1.5 block font-mono text-[11px] font-extrabold uppercase tracking-[0.12em] text-[#647468]">
                 Nova senha
               </label>
               <div className="relative">
-                <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#879287]" />
+                <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#647468]" />
                 <input
                   type={showPassword ? 'text' : 'password'}
                   value={password}
@@ -89,13 +91,13 @@ export const ResetPasswordScreen: React.FC<ResetPasswordScreenProps> = ({
                   minLength={8}
                   maxLength={128}
                   autoFocus
-                  className="rp-input w-full rounded-2xl pl-10 pr-12 text-base"
+                  className="rp-input w-full rounded-2xl pl-10 pr-12 text-sm font-medium"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword((v) => !v)}
                   aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
-                  className="absolute right-0 top-0 flex h-[46px] w-11 items-center justify-center text-[#879287] hover:text-[#F4F7F2]"
+                  className="absolute right-0 top-0 flex h-[46px] w-11 items-center justify-center text-[#647468] hover:text-[#0D1510]"
                 >
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
@@ -103,11 +105,11 @@ export const ResetPasswordScreen: React.FC<ResetPasswordScreenProps> = ({
             </div>
 
             <div>
-              <label className="mb-1.5 block font-mono text-[11px] font-extrabold uppercase tracking-[0.12em] text-[#879287]">
+              <label className="mb-1.5 block font-mono text-[11px] font-extrabold uppercase tracking-[0.12em] text-[#647468]">
                 Confirmar nova senha
               </label>
               <div className="relative">
-                <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#879287]" />
+                <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#647468]" />
                 <input
                   type={showPassword ? 'text' : 'password'}
                   value={confirm}
@@ -117,13 +119,13 @@ export const ResetPasswordScreen: React.FC<ResetPasswordScreenProps> = ({
                   required
                   minLength={8}
                   maxLength={128}
-                  className="rp-input w-full rounded-2xl pl-10 pr-3.5 text-base"
+                  className="rp-input w-full rounded-2xl pl-10 pr-3.5 text-sm font-medium"
                 />
               </div>
             </div>
 
             {error && (
-              <div className="rounded-2xl border border-[#F87171]/35 bg-[#F87171]/10 px-3.5 py-2.5 text-xs font-medium text-[#FCA5A5]">
+              <div className="rounded-2xl border border-[#DC2626]/30 bg-[#FEE2E2] px-3.5 py-2.5 text-xs font-semibold text-[#991B1B]">
                 {error}
               </div>
             )}
